@@ -28,11 +28,16 @@ It runs as a single web page and as native desktop apps for Windows and macOS. A
 
 Use the **Role** switcher in the top bar to see each team's permissions (Brand, Care desk, Compliance, KejarMimpi, HR, Syariah).
 
+📘 **[User guide with step-by-step pictures](docs/USER_GUIDE.md)** · [PDF version](docs/Lume-User-Guide.pdf)
+
 | Care desk | Advocate app |
 |---|---|
 | ![Care desk](docs/screenshots/care.png) | ![Advocate app](docs/screenshots/advocate-app.png) |
 
 ## Run it
+
+Full install steps, including the first-launch security prompts, are in the [user guide](docs/USER_GUIDE.md#1-install-and-open).
+
 
 **Web:** open [`web/dist/lume-cimb-niaga.html`](web/dist/lume-cimb-niaga.html) in Chrome, Edge or Safari. No server or install needed.
 

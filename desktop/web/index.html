@@ -233,6 +233,10 @@ svg text { font-family: var(--font); }
 .drawer .dh { padding: 10px 14px; background: var(--surface); border-bottom: 1px solid var(--line); display: grid; gap: 6px; }
 .drawer .db { flex: 1; overflow-y: auto; display: grid; place-items: start center; padding: 16px 0 24px; }
 body.has-drawer .main { margin-right: 430px; }
+/* with the advocate phone open the work area is ~800px wide: let multi-column rows wrap */
+body.has-drawer .page .grid[style*="grid-template-columns"] { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important; }
+body.has-drawer .g6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+body.has-drawer .care { grid-template-columns: 1fr; }
 
 /* ---------- phone (advocate app, Bahasa) ---------- */
 .phone { width: 360px; height: 720px; border-radius: 42px; background: #0f1420; padding: 11px; box-shadow: 0 20px 50px rgba(15,20,32,.35); flex: none; }
@@ -314,7 +318,7 @@ body.has-drawer .main { margin-right: 430px; }
 .clock i.used.crit { background: var(--crit); }
 .clock i.ext { background: #fde8c8; }
 .clock i.ext.used { background: var(--serious); }
-.kv { display: grid; grid-template-columns: minmax(84px, 150px) minmax(0, 1fr); gap: 6px 12px; font-size: 12.5px; }
+.kv { display: grid; grid-template-columns: minmax(84px, 130px) minmax(0, 1fr); gap: 6px 12px; font-size: 12.5px; }
 .kv dd { overflow-wrap: anywhere; }
 .kv dt { color: var(--muted); }
 .kv dd { margin: 0; font-weight: 600; }
@@ -1029,7 +1033,7 @@ const maskHandle = h => { const s = String(h || ''); if (s.includes('***')) retu
 /* ---------- triage classifier (Alivia rules; Bahasa + English) ---------- */
 const LEX = {
   spam: [/bit\.ly|s\.id\/|tinyurl|wa\.me|t\.me\//i, /pinjaman (cepat|kilat|online)|tanpa bi checking|giveaway|hadiah gratis|follow akun ini|dm nomor kartu|bantuan .*24 jam/i],
-  fraud: /\botp\b|\bpin\b|kode verifikasi|minta kode|ngaku(?:-ngaku)? dari|mengaku dari|akun cs|cs palsu|penipu|penipuan|scam|phising|phishing|hadiah undian|link palsu|apk palsu|minta password/i,
+  fraud: /ngaku|mengaku|akun cs|cs palsu|cs gadungan|penipu|penipuan|scam|phising|phishing|hadiah undian|link palsu|apk palsu|(?:ada (?:yang|orang)|seseorang|orang|telp|telepon|ditelepon|dm|wa|whatsapp)\b.{0,40}\b(?:minta|meminta)\b.{0,20}\b(?:otp|pin|password|kode)|(?:minta|meminta|kirim(?:kan)?|berikan)\s+(?:kode\s+)?(?:otp|pin|password|cvv)\s+(?:saya|aku|gue|gw|kamu|anda)/i,
   crisis: /viral|down dari|semua nasabah|banyak nasabah|wartawan|media|boikot|lapor (?:polisi|ojk)|ombudsman|thread:|rt \d|retweet/i,
   complaint: /gagal|terpotong|kepotong|terdebet|belum (?:masuk|kembali|cair)|tidak bisa|gak bisa|nggak bisa|ga bisa|gak masuk|error|kecewa|lambat|lama banget|diblokir|terblokir|tolong dicek|mohon dibantu|komplain|antri|antrian|biaya admin|naik ya|susah dihubungi|crash|kendala/i,
   question: /\?|gimana|bagaimana|cara |apakah|ada promo|berapa|kapan|bisa ga|bisa gak|boleh tanya|ada lowongan|info dong/i,
@@ -1175,7 +1179,7 @@ function autoFix(text, ctx = {}) {
   if (prod && prod.risk === 'investment') t = t.replace(/\s?\d+(?:[.,]\d+)?\s?%\s?(?:per tahun|p\.?a\.?|setahun)?/gi, '');
   R.compare.words.forEach(w => { t = t.replace(wordRe(w), (m, a) => a + ''); });
   t = maskPII(t).text;
-  t = t.replace(/[ \t]{2,}/g, ' ').replace(/\s+([,.!])/g, '$1').replace(/,\s*,/g, ',').trim();
+  t = t.replace(/[ \t]{2,}/g, ' ').replace(/\s+([,.!])/g, '$1').replace(/,\s*,/g, ',').replace(/,\s*([!.?])/g, '$1').replace(/([!.?])\s*,/g, '$1').trim();
   if (prod && prod.facts && prod.facts.tenors) t = t.replace(/(\d+)\s?bulan/gi, (m, v) => prod.facts.tenors.includes(+v) ? m : Math.max(...prod.facts.tenors.filter(x => x <= +v).concat([prod.facts.tenors[0]])) + ' bulan');
   if (prod && prod.facts && prod.facts.rates && prod.facts.rates.length && prod.risk !== 'investment') t = t.replace(/(\d+(?:[.,]\d+)?)\s?%/g, (m, v) => prod.facts.rates.includes(parseFloat(v.replace(',', '.'))) ? m : String(prod.facts.rates[0]).replace('.', ',') + '%');
   if (prod && prod.risk && !RISK_WORDING[prod.risk].detect.some(d => t.toLowerCase().includes(d))) t += '\n\n' + RISK_WORDING[prod.risk].text;
@@ -1668,6 +1672,7 @@ VIEWS.tasks = p => {
   <h3 class="mt16" style="font-size:14px">Six playbooks for CIMB Niaga</h3><p class="small ink2" style="margin:4px 0 10px">Start a task from a playbook: who posts, product tag and caption pattern are filled in for you.</p>
   <div class="grid g3">${PLAYBOOKS.map((b, i) => `<div class="card" style="padding:12px 14px"><div class="row">${icon(b.ic, 18)}<b>${b.n}</b></div><div class="small ink2 mt8">${b.d}</div><div class="row between mt8"><span class="pill">${b.who}</span><button class="btn sm" data-act="pb-start" data-i="${i}">Start task</button></div></div>`).join('')}</div>`;
 };
+ACT['task-new'] = () => openTaskWizard({});
 ACT['pb-start'] = el => { const b = PLAYBOOKS[+el.dataset.i]; openTaskWizard({ playbook: b.n, circles: b.circles, product: b.product, camp: b.camp, paid: !!b.paid, name: b.n === 'Employer brand' ? 'A day at CIMB Niaga' : '' }); };
 ACT['task-ops'] = (el, e) => { e.stopPropagation(); const t = taskById(el.dataset.id); openModal(esc(t.name), `<div class="stack">${[['task-copy', 'copy', 'Quick copy (new draft with the same brief)'], ['task-remind', 'bell', 'Remind advocates who haven’t posted'], ['task-term', 'x', 'Terminate task'], ...(t.status === 'draft' ? [['task-del', 'x', 'Delete draft']] : [])].map(([a, ic, l]) => `<button class="btn" style="justify-content:flex-start" data-act="${a}" data-id="${t.id}">${icon(ic, 14)}${l}</button>`).join('')}</div>`); };
 ACT['task-copy'] = el => { const t = taskById(el.dataset.id); const c = JSON.parse(JSON.stringify(t)); c.id = 't' + Date.now().toString(36); c.name = t.name + ' (copy)'; c.status = 'draft'; c.exec = c.assignees.map(a => ({ adv: a, st: 'pending' })); c.creator = ROLES[S.role].user; S.tasks.unshift(c); closeModal(); toast('Copied as a draft'); go('#task-' + c.id); };

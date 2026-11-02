@@ -23,7 +23,7 @@ const maskHandle = h => { const s = String(h || ''); if (s.includes('***')) retu
 /* ---------- triage classifier (Alivia rules; Bahasa + English) ---------- */
 const LEX = {
   spam: [/bit\.ly|s\.id\/|tinyurl|wa\.me|t\.me\//i, /pinjaman (cepat|kilat|online)|tanpa bi checking|giveaway|hadiah gratis|follow akun ini|dm nomor kartu|bantuan .*24 jam/i],
-  fraud: /\botp\b|\bpin\b|kode verifikasi|minta kode|ngaku(?:-ngaku)? dari|mengaku dari|akun cs|cs palsu|penipu|penipuan|scam|phising|phishing|hadiah undian|link palsu|apk palsu|minta password/i,
+  fraud: /ngaku|mengaku|akun cs|cs palsu|cs gadungan|penipu|penipuan|scam|phising|phishing|hadiah undian|link palsu|apk palsu|(?:ada (?:yang|orang)|seseorang|orang|telp|telepon|ditelepon|dm|wa|whatsapp)\b.{0,40}\b(?:minta|meminta)\b.{0,20}\b(?:otp|pin|password|kode)|(?:minta|meminta|kirim(?:kan)?|berikan)\s+(?:kode\s+)?(?:otp|pin|password|cvv)\s+(?:saya|aku|gue|gw|kamu|anda)/i,
   crisis: /viral|down dari|semua nasabah|banyak nasabah|wartawan|media|boikot|lapor (?:polisi|ojk)|ombudsman|thread:|rt \d|retweet/i,
   complaint: /gagal|terpotong|kepotong|terdebet|belum (?:masuk|kembali|cair)|tidak bisa|gak bisa|nggak bisa|ga bisa|gak masuk|error|kecewa|lambat|lama banget|diblokir|terblokir|tolong dicek|mohon dibantu|komplain|antri|antrian|biaya admin|naik ya|susah dihubungi|crash|kendala/i,
   question: /\?|gimana|bagaimana|cara |apakah|ada promo|berapa|kapan|bisa ga|bisa gak|boleh tanya|ada lowongan|info dong/i,
@@ -169,7 +169,7 @@ function autoFix(text, ctx = {}) {
   if (prod && prod.risk === 'investment') t = t.replace(/\s?\d+(?:[.,]\d+)?\s?%\s?(?:per tahun|p\.?a\.?|setahun)?/gi, '');
   R.compare.words.forEach(w => { t = t.replace(wordRe(w), (m, a) => a + ''); });
   t = maskPII(t).text;
-  t = t.replace(/[ \t]{2,}/g, ' ').replace(/\s+([,.!])/g, '$1').replace(/,\s*,/g, ',').trim();
+  t = t.replace(/[ \t]{2,}/g, ' ').replace(/\s+([,.!])/g, '$1').replace(/,\s*,/g, ',').replace(/,\s*([!.?])/g, '$1').replace(/([!.?])\s*,/g, '$1').trim();
   if (prod && prod.facts && prod.facts.tenors) t = t.replace(/(\d+)\s?bulan/gi, (m, v) => prod.facts.tenors.includes(+v) ? m : Math.max(...prod.facts.tenors.filter(x => x <= +v).concat([prod.facts.tenors[0]])) + ' bulan');
   if (prod && prod.facts && prod.facts.rates && prod.facts.rates.length && prod.risk !== 'investment') t = t.replace(/(\d+(?:[.,]\d+)?)\s?%/g, (m, v) => prod.facts.rates.includes(parseFloat(v.replace(',', '.'))) ? m : String(prod.facts.rates[0]).replace('.', ',') + '%');
   if (prod && prod.risk && !RISK_WORDING[prod.risk].detect.some(d => t.toLowerCase().includes(d))) t += '\n\n' + RISK_WORDING[prod.risk].text;

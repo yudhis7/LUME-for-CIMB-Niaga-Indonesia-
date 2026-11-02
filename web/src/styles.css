@@ -223,6 +223,10 @@ svg text { font-family: var(--font); }
 .drawer .dh { padding: 10px 14px; background: var(--surface); border-bottom: 1px solid var(--line); display: grid; gap: 6px; }
 .drawer .db { flex: 1; overflow-y: auto; display: grid; place-items: start center; padding: 16px 0 24px; }
 body.has-drawer .main { margin-right: 430px; }
+/* with the advocate phone open the work area is ~800px wide: let multi-column rows wrap */
+body.has-drawer .page .grid[style*="grid-template-columns"] { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important; }
+body.has-drawer .g6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+body.has-drawer .care { grid-template-columns: 1fr; }
 
 /* ---------- phone (advocate app, Bahasa) ---------- */
 .phone { width: 360px; height: 720px; border-radius: 42px; background: #0f1420; padding: 11px; box-shadow: 0 20px 50px rgba(15,20,32,.35); flex: none; }
@@ -304,7 +308,7 @@ body.has-drawer .main { margin-right: 430px; }
 .clock i.used.crit { background: var(--crit); }
 .clock i.ext { background: #fde8c8; }
 .clock i.ext.used { background: var(--serious); }
-.kv { display: grid; grid-template-columns: minmax(84px, 150px) minmax(0, 1fr); gap: 6px 12px; font-size: 12.5px; }
+.kv { display: grid; grid-template-columns: minmax(84px, 130px) minmax(0, 1fr); gap: 6px 12px; font-size: 12.5px; }
 .kv dd { overflow-wrap: anywhere; }
 .kv dt { color: var(--muted); }
 .kv dd { margin: 0; font-weight: 600; }
