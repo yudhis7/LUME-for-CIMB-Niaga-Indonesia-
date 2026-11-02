@@ -1,0 +1,40 @@
+name: Publish release
+
+# Run from the Actions tab: "Publish release" > Run workflow.
+# Publishes a GitHub Release with the Windows and macOS builds found in releases/<version>/.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to publish (a folder under releases/)
+        required: true
+        default: v1.0.0
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Publish GitHub Release with Windows and macOS builds
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          case "$VERSION" in v[0-9]*) ;; *) echo "Version must look like v1.0.0"; exit 1 ;; esac
+          dir="releases/$VERSION"
+          test -d "$dir" || { echo "No folder $dir"; exit 1; }
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            echo "Release $VERSION exists: replacing its files"
+            gh release upload "$VERSION" --clobber "$dir"/*.exe "$dir"/*.zip "$dir"/INSTALL.txt
+          else
+            gh release create "$VERSION" \
+              --title "Lume for CIMB Niaga ${VERSION#v}" \
+              --notes-file "$dir/RELEASE_NOTES.md" \
+              --target "$GITHUB_SHA" \
+              "$dir"/*.exe "$dir"/*.zip "$dir"/INSTALL.txt
+          fi
