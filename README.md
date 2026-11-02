@@ -73,3 +73,9 @@ The desktop shell (`desktop/`) embeds the web build and serves it from `127.0.0.
 - **Product facts are placeholders.** Rates, tenors and fees on the product sheets (for example, KPR 3.88%) exist only to demonstrate the product-facts check. Replace them with CIMB Niaga's real product sheets.
 - **AI.** Captions, replies and the daily brief come from the approved template library. The published claude.ai version can write them live with Claude. The compliance checks are deterministic rules.
 - **Regulation summaries** (POJK 6/2026, POJK 22/2023, SEOJK 20/2025) are summaries only; CIMB Niaga Compliance and Legal confirm how each rule applies.
+
+## Credits
+
+- **[@yudhis7](https://github.com/yudhis7)** · project owner: the CIMB Niaga social media growth proposal, requirements and direction for the pilot
+- **Claude** (Anthropic) · co-builder: web console, Windows and macOS apps, user guide
+- Built on **Whale Lume**; desktop apps use [go-webview](https://github.com/abemedia/go-webview) (MIT) and [purego](https://github.com/ebitengine/purego) (Apache-2.0)
