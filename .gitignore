@@ -1,0 +1,10 @@
+# test output
+web/shots/
+node_modules/
+
+# desktop build output
+desktop/build/
+desktop/rsrc_windows_amd64.syso
+*.zip
+
+.DS_Store
