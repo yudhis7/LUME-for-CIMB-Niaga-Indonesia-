@@ -36,7 +36,12 @@ Use the **Role** switcher in the top bar to see each team's permissions (Brand, 
 
 **Web:** open [`web/dist/lume-cimb-niaga.html`](web/dist/lume-cimb-niaga.html) in Chrome, Edge or Safari. No server or install needed.
 
-**Desktop:** download the Windows or macOS build from [Releases](../../releases).
+**Desktop:** download from [`releases/v1.0.0`](releases/v1.0.0):
+
+- [`Lume-for-CIMB-Niaga.exe`](releases/v1.0.0/Lume-for-CIMB-Niaga.exe) or [`Lume-for-CIMB-Niaga-Windows.zip`](releases/v1.0.0/Lume-for-CIMB-Niaga-Windows.zip) for Windows
+- [`Lume-for-CIMB-Niaga-macOS.zip`](releases/v1.0.0/Lume-for-CIMB-Niaga-macOS.zip) for macOS
+- [`INSTALL.txt`](releases/v1.0.0/INSTALL.txt): first-launch steps, data locations and uninstall
+
 
 - Windows 10/11: `Lume for CIMB Niaga.exe`, single file. Needs the WebView2 Runtime, which is already on almost every Windows 10/11 PC.
 - macOS 14 Sonoma or later: universal `.app` for Apple Silicon and Intel.

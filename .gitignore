@@ -5,6 +5,6 @@ node_modules/
 # desktop build output
 desktop/build/
 desktop/rsrc_windows_amd64.syso
-*.zip
+desktop/**/*.zip
 
 .DS_Store
