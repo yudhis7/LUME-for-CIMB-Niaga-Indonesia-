@@ -10,14 +10,14 @@
 	<key>CFBundleIdentifier</key><string>im.whale.lume.cimbniaga</string>
 	<key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
 	<key>CFBundlePackageType</key><string>APPL</string>
-	<key>CFBundleShortVersionString</key><string>1.0.0</string>
-	<key>CFBundleVersion</key><string>1</string>
+	<key>CFBundleShortVersionString</key><string>1.1.0</string>
+	<key>CFBundleVersion</key><string>2</string>
 	<key>LSApplicationCategoryType</key><string>public.app-category.business</string>
 	<key>LSMinimumSystemVersion</key><string>14.0</string>
 	<key>NSHighResolutionCapable</key><true/>
 	<key>NSPrincipalClass</key><string>NSApplication</string>
 	<key>NSSupportsAutomaticGraphicsSwitching</key><true/>
-	<key>NSHumanReadableCopyright</key><string>Lume by Whale · Pilot workspace for PT Bank CIMB Niaga Tbk</string>
+	<key>NSHumanReadableCopyright</key><string>Lume by Whale for PT Bank CIMB Niaga Tbk · Pilot workspace. CIMB Niaga name and logo are trademarks of PT Bank CIMB Niaga Tbk.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key><true/>

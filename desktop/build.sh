@@ -5,11 +5,12 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 export CGO_ENABLED=0
-VER=1.0.0
+VER=1.1.0
 APP="build/mac/Lume for CIMB Niaga.app"
 
 # Use the latest web build if the web/ folder sits next to this one.
-[ -f ../web/dist/lume-cimb-niaga.html ] && cp ../web/dist/lume-cimb-niaga.html web/index.html
+# The desktop apps use the CIMB Niaga edition (logo + sign-in): cd ../web && python3 build.py --edition cimb
+[ -f ../web/dist/lume-cimb-niaga-desktop.html ] && cp ../web/dist/lume-cimb-niaga-desktop.html web/index.html
 
 # Windows: icon + manifest resources, then a GUI (no console) executable.
 rsrc -arch amd64 -manifest assets/app.manifest -ico assets/icon.ico -o rsrc_windows_amd64.syso

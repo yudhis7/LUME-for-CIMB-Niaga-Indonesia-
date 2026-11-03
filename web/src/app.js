@@ -7,7 +7,7 @@ function load() {
   return null;
 }
 function freshState() { S = seed(); S.inbox.forEach(prepInbox); S.inbox.forEach(m => { if (m.pre != null) { const t = m.at + m.pre * 60000; let text = replyFallback(m); if (m.ai.type === 'Complaint') { const tk = createTicket(m, t); text = text.replace('[dibuat saat dikirim]', tk.id); } m.thread.push({ from: 'brand', at: t, text, by: 'Agus F.' }); m.firstReplyAt = t; m.status = m.ai.type === 'Complaint' ? 'ticketed' : m.ai.type === 'Crisis or viral' ? 'escalated' : 'replied'; delete m.pre; } }); S.phone = phoneInit(); }
-function resetDemo() { try { localStorage.removeItem(STORE); } catch (e) { } freshState(); save(); location.hash = '#command'; render(); toast('Demo data reset'); }
+function resetDemo() { try { localStorage.removeItem(STORE); } catch (e) { } freshState(); if (EDITION.signin) applySessionRole(); document.body.classList.toggle('has-drawer', !!S.ui.drawer); save(); location.hash = '#command'; render(); toast('Demo data reset'); }
 
 /* ---------- AI (Claude via the page's sample capability; templates as fallback) ---------- */
 const AI = {
@@ -70,21 +70,21 @@ function renderNav() {
 function renderTop() {
   const un = S.notifs.filter(n => n.unread).length;
   $('#topbar').innerHTML = `
-    <div class="brand"><span class="whale">whale</span><span class="lume">Lume</span><small>Harbor 5.6 · Alivia</small></div>
-    <div class="ws"><span class="mark">CN</span><span class="wsn">PT Bank CIMB Niaga Tbk</span></div>
+    ${EDITION.logo ? `<div class="brand"><img class="client-logo" src="${EDITION.logo}" alt="CIMB Niaga"><span class="brand-div"></span><span class="lume">Lume</span><small>by Whale</small></div>` : `<div class="brand"><span class="whale">whale</span><span class="lume">Lume</span><small>Harbor 5.6 · Alivia</small></div>
+    <div class="ws"><span class="mark">CN</span><span class="wsn">PT Bank CIMB Niaga Tbk</span></div>`}
     <span class="env">Pilot</span>
     <div class="grow"></div>
     <div class="search" style="position:relative">${icon('search', 14)}<input id="gsearch" placeholder="Search tasks, tickets, assets, people" autocomplete="off" aria-label="Search"></div>
     <span class="ai-badge ${AI.live ? 'live' : ''}" data-tip="${AI.live ? 'Captions, replies and briefs are written live by Claude, then checked by the compliance rules.' : 'Captions and replies come from the approved template library. Live AI writing switches on when this page is opened on claude.ai and you allow it.'}"><i></i>Alivia AI · ${AI.live ? 'live' : 'templates'}</span>
     <button class="iconbtn" data-act="notifs" aria-label="Notifications">${icon('bell', 18)}${un ? `<span class="dot-count">${un}</span>` : ''}</button>
     <button class="btn ${S.ui.drawer ? 'primary' : ''}" data-act="drawer" aria-label="Advocate app">${icon('phone', 15)}<span class="lbl">Advocate app</span></button>
-    <label class="row small" style="gap:6px"><span class="muted">Role</span><select class="role-sel" id="rolesel" aria-label="Switch role">${Object.entries(ROLES).map(([k, r]) => `<option value="${k}" ${S.role === k ? 'selected' : ''}>${r.name}</option>`).join('')}</select></label>
-    ${av(ROLES[S.role].user, 28)}`;
+    ${isAdmin() ? `<label class="row small" style="gap:6px"><span class="muted">Role</span><select class="role-sel" id="rolesel" aria-label="Switch role">${Object.entries(ROLES).map(([k, r]) => `<option value="${k}" ${S.role === k ? 'selected' : ''}>${r.name}</option>`).join('')}</select></label>` : ''}
+    ${EDITION.signin ? userMenuHTML() : av(ROLES[S.role].user, 28)}`;
 }
 let lastRoute = null;
 function render() {
   const p = parseHash();
-  document.title = 'Lume for CIMB Niaga';
+  document.title = EDITION.signin ? 'Lume · CIMB Niaga' : 'Lume for CIMB Niaga';
   renderTop(); renderNav();
   const main = $('#main');
   const keep = lastRoute === location.hash ? main.scrollTop : 0;
@@ -137,13 +137,13 @@ function doSearch(q) {
 function bindEvents() {
   document.addEventListener('click', e => {
     const el = e.target.closest('[data-act]');
-    if (!e.target.closest('.popover') && !e.target.closest('[data-act="notifs"]') && !e.target.closest('#gsearch')) closePops();
+    if (!e.target.closest('.popover') && !e.target.closest('[data-act="notifs"]') && !e.target.closest('[data-act="user-menu"]') && !e.target.closest('#gsearch')) closePops();
     if (!el) return;
     const a = el.getAttribute('data-act');
     if (ACT[a]) { e.preventDefault(); ACT[a](el, e); }
   });
   document.addEventListener('change', e => {
-    if (e.target.id === 'rolesel') { S.role = e.target.value; toast(`Now working as ${ROLES[S.role].name} (${ROLES[S.role].user})`, 'user'); render(); return; }
+    if (e.target.id === 'rolesel') { if (!isAdmin()) return; S.role = e.target.value; toast(`Now working as ${ROLES[S.role].name} (${ROLES[S.role].user})`, 'user'); render(); return; }
     const k = e.target.getAttribute('data-change'); if (k && ONCHANGE[k]) ONCHANGE[k](e.target, e);
   });
   document.addEventListener('input', e => {
@@ -177,7 +177,11 @@ function init() {
   S.inbox.forEach(m => { if (!m.ai) prepInbox(m); });
   if (!S.phone) S.phone = phoneInit();
   document.body.classList.toggle('has-drawer', !!S.ui.drawer);
-  initTip(); bindEvents(); render();
+  initTip(); bindEvents();
+  if (EDITION.signin) {
+    SESSION = readSession();
+    if (!SESSION) showSignin(); else enterApp(false);
+  } else render();
   setInterval(updateLive, 15000);
   AI.init();
 }

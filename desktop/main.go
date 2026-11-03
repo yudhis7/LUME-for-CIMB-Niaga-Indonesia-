@@ -17,7 +17,7 @@ import (
 
 const (
 	appName    = "Lume for CIMB Niaga"
-	appVersion = "1.0.0"
+	appVersion = "1.1.0"
 	fixedPort  = "47616"
 )
 

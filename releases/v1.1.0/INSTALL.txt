@@ -1,0 +1,85 @@
+LUME FOR CIMB NIAGA · DESKTOP APP
+Version 1.1.0 · CIMB Niaga edition · Pilot workspace (sample data)
+
+The full Lume console as a desktop app: command centre, calendar, mass tasks,
+Harbor library, accounts, voice network, insights and points, care desk,
+social tickets, compliance, OJK reports, pilot scorecard, and the advocate
+phone app in Bahasa. It runs offline. Your changes (roles, tasks, tickets,
+replies) are saved on this computer between launches.
+
+
+SIGN IN (new in 1.1.0)
+---------------------
+The app opens on a CIMB Niaga sign-in screen. Use a pilot account:
+
+  User ID            Team
+  dewi.anggraini     Brand & Content (HQ)
+  agus.firmansyah    Social Care Desk
+  maria.tambunan     Compliance & Legal
+  fikri.ramadhan     KejarMimpi team
+  sinta.maharani     HR · Life at CIMB Niaga
+  hasan.lubis        CIMB Niaga Syariah team
+  whale.admin        Whale pilot admin (can switch between all teams)
+
+  Password for all pilot accounts: lume2026
+
+- Click an account under "Pilot accounts" to fill it in, then Sign in
+  (double-click signs in straight away).
+- Each person sees their own team's view; only whale.admin can switch roles.
+- Tick "Keep me signed in on this device for 7 days" to skip sign-in next time.
+- Sign out from your name at the top right.
+- After 5 wrong passwords, sign-in pauses for 30 seconds.
+- The pilot sign-in is checked on this computer only. Never enter your OCTO,
+  internet banking or email password. In production, Lume uses CIMB Niaga
+  single sign-on, set up with IT & InfoSec.
+
+
+WINDOWS 10 / 11
+---------------
+File: Lume-for-CIMB-Niaga.exe or "Lume for CIMB Niaga.exe" (one file, nothing to install)
+
+1. Double-click "Lume for CIMB Niaga.exe".
+2. First launch only: the app is not yet code-signed, so Windows may show
+   "Windows protected your PC". Click "More info", then "Run anyway".
+3. Optional: right-click the file > "Pin to Start" or "Pin to taskbar".
+
+Needs the Microsoft Edge WebView2 Runtime. It is already on Windows 11 and on
+almost every updated Windows 10 PC. If it is missing, the app says so and
+opens Microsoft's download page.
+
+Saved data:  %APPDATA%\Lume for CIMB Niaga.exe\
+Runtime:     %LOCALAPPDATA%\Lume for CIMB Niaga\
+To uninstall, delete the .exe and those two folders.
+
+
+MACOS 14 SONOMA OR LATER (Apple Silicon and Intel)
+--------------------------------------------------
+File: Lume for CIMB Niaga.app (inside the macOS zip)
+
+1. Unzip, then drag "Lume for CIMB Niaga.app" into Applications.
+2. First launch only: the app is not notarized by Apple yet, so macOS blocks
+   the first open. Double-click it once and choose "Done" on the warning,
+   then open System Settings > Privacy & Security, scroll down and click
+   "Open Anyway" next to Lume for CIMB Niaga. Confirm with your password.
+3. If macOS instead says the app "is damaged", run this once in Terminal:
+       xattr -dr com.apple.quarantine "/Applications/Lume for CIMB Niaga.app"
+   then open the app again.
+
+Menu: Lume > Quit (Cmd+Q); Edit > Copy / Paste; View > Reload; Window.
+Saved data: ~/Library/WebKit/im.whale.lume.cimbniaga/
+To uninstall, move the app to the Trash.
+
+
+USING THE APP
+-------------
+- Start on the Command centre. To see another team's view, sign out and sign
+  in as that team, or sign in as whale.admin and use the Role switcher.
+- "Advocate app" (top bar) opens the phone app in Bahasa beside the console.
+- "Reset demo data" (bottom of the left menu) restores the starting state;
+  use it before each demo.
+- AI captions, replies and the daily brief use the approved template library
+  in the desktop app. Live Claude-written drafts are available in the web
+  version of Lume on claude.ai.
+- All accounts, advocates, messages, tickets and product-sheet values are
+  sample data for the pilot proposal. Product facts (rates, tenors, fees)
+  are placeholders to replace with CIMB Niaga's real product sheets.

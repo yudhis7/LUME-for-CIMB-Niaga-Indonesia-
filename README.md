@@ -41,22 +41,26 @@ Full install steps, including the first-launch security prompts, are in the [use
 
 **Web:** open [`web/dist/lume-cimb-niaga.html`](web/dist/lume-cimb-niaga.html) in Chrome, Edge or Safari. No server or install needed.
 
-**Desktop:** download from [`releases/v1.0.0`](releases/v1.0.0):
+**Desktop (CIMB Niaga edition, v1.1.0):** download from [`releases/v1.1.0`](releases/v1.1.0), or from the [Releases](../../releases) page:
 
-- [`Lume-for-CIMB-Niaga.exe`](releases/v1.0.0/Lume-for-CIMB-Niaga.exe) or [`Lume-for-CIMB-Niaga-Windows.zip`](releases/v1.0.0/Lume-for-CIMB-Niaga-Windows.zip) for Windows
-- [`Lume-for-CIMB-Niaga-macOS.zip`](releases/v1.0.0/Lume-for-CIMB-Niaga-macOS.zip) for macOS
-- [`INSTALL.txt`](releases/v1.0.0/INSTALL.txt): first-launch steps, data locations and uninstall
+- [`Lume-for-CIMB-Niaga.exe`](releases/v1.1.0/Lume-for-CIMB-Niaga.exe) or [`Lume-for-CIMB-Niaga-Windows.zip`](releases/v1.1.0/Lume-for-CIMB-Niaga-Windows.zip) for Windows 10/11. Needs the WebView2 Runtime, which is already on almost every Windows 10/11 PC.
+- [`Lume-for-CIMB-Niaga-macOS.zip`](releases/v1.1.0/Lume-for-CIMB-Niaga-macOS.zip) for macOS 14 Sonoma or later (Apple Silicon and Intel)
+- [`INSTALL.txt`](releases/v1.1.0/INSTALL.txt): sign-in, first-launch steps, data locations and uninstall
 
+The desktop apps open on a **CIMB Niaga sign-in screen**. Use a pilot account: `dewi.anggraini` (Brand), `agus.firmansyah` (Care desk), `maria.tambunan` (Compliance), `fikri.ramadhan` (KejarMimpi), `sinta.maharani` (HR), `hasan.lubis` (Syariah), or `whale.admin` (all roles). The password for all of them is `lume2026`.
 
-- Windows 10/11: `Lume for CIMB Niaga.exe`, single file. Needs the WebView2 Runtime, which is already on almost every Windows 10/11 PC.
-- macOS 14 Sonoma or later: universal `.app` for Apple Silicon and Intel.
-- The builds are not code-signed yet, so the first launch shows a security prompt. On Windows: *More info → Run anyway*. On Mac: *System Settings → Privacy & Security → Open Anyway*.
+The pilot sign-in only sets which team's view you see, and it's checked on the device only. In production, Lume uses CIMB Niaga single sign-on.
+
+The builds are not code-signed yet, so the first launch shows a security prompt. On Windows: *More info → Run anyway*. On Mac: *System Settings → Privacy & Security → Open Anyway*. Version 1.0.0 (without sign-in) is still in [`releases/v1.0.0`](releases/v1.0.0).
+
+![Sign-in](docs/screenshots/sign-in.png)
 
 ## Build
 
 ```bash
 # Web app: bundles web/src into one self-contained HTML file
-cd web && python3 build.py            # → web/dist/lume-cimb-niaga.html
+cd web && python3 build.py                    # → web/dist/lume-cimb-niaga.html (neutral Lume, no sign-in)
+python3 build.py --edition cimb               # → web/dist/lume-cimb-niaga-desktop.html (CIMB Niaga logo + sign-in)
 
 # Tests (Playwright + Chromium)
 node test/routes.js && node test/flows.js && node test/smoke.js
@@ -65,9 +69,11 @@ node test/routes.js && node test/flows.js && node test/smoke.js
 cd desktop && ./build.sh
 ```
 
-The desktop shell (`desktop/`) embeds the web build and serves it from `127.0.0.1:47616`, so saved data persists between launches. Windows uses WebView2 and macOS uses WKWebView, through [go-webview](https://github.com/abemedia/go-webview) (MIT) and [purego](https://github.com/ebitengine/purego) (Apache-2.0), both vendored in `desktop/third_party`.
+The desktop shell (`desktop/`) embeds the CIMB Niaga edition of the web build and serves it from `127.0.0.1:47616`, so saved data persists between launches. Windows uses WebView2 and macOS uses WKWebView, through [go-webview](https://github.com/abemedia/go-webview) (MIT) and [purego](https://github.com/ebitengine/purego) (Apache-2.0), both vendored in `desktop/third_party`.
 
 ## Notes
+
+- **Branding.** The CIMB Niaga name and logo are trademarks of PT Bank CIMB Niaga Tbk. They are used in the desktop edition built for CIMB Niaga's pilot.
 
 - **Sample data.** Account figures come from Social Blade public data (about 22 October 2026), as cited in the proposal. Advocates, creators, messages and tickets are fictional.
 - **Product facts are placeholders.** Rates, tenors and fees on the product sheets (for example, KPR 3.88%) exist only to demonstrate the product-facts check. Replace them with CIMB Niaga's real product sheets.
