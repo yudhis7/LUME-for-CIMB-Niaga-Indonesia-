@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 
 const OUT = path.resolve(__dirname, '../../docs/guide/img');
-const APP = 'file://' + path.resolve(__dirname, '../dist/lume-cimb-niaga.html');
+const APP = 'file://' + path.resolve(__dirname, '../dist/lume-cimb-niaga-desktop.html');
 fs.mkdirSync(OUT, { recursive: true });
 
 // Lets the page grow to full height so any region can be captured, and hides toasts/tooltips.
@@ -38,6 +38,11 @@ const FLOW_CSS = `html,body{height:auto!important}.app{height:auto!important;gri
     await ev(() => localStorage.clear());
     await p.reload();
     await wait(700);
+    if (await ev(() => !!document.querySelector('#signin'))) {
+      await p.screenshot({ path: path.join(OUT, '00-sign-in.png') });
+      await ev(() => { SESSION = writeSession('whale.admin', false); enterApp(false); S.role = 'brand'; render(); });
+      await wait(300);
+    }
     await p.addStyleTag({ content: FLOW_CSS });
   }
 
@@ -114,7 +119,7 @@ const FLOW_CSS = `html,body{height:auto!important}.app{height:auto!important;gri
   await shot('01-overview', [
     { sel: '#nav', n: 1, pad: -2 }, { sel: '#topbar .search', n: 2 }, { sel: '.ai-badge', n: 3 },
     { sel: '[data-act="notifs"]', n: 4 }, { sel: '#topbar [data-act="drawer"]', n: 5 },
-    { sel: 'label:has(#rolesel)', n: 6 }, { sel: '#nav [data-act="reset"]', n: 7 }, { sel: '.page .pagehead', n: 8 }
+    { sel: 'label:has(#rolesel)', n: 6 }, { sel: '#nav [data-act="reset"]', n: 7 }, { sel: '.page .pagehead', n: 8 }, { sel: '.si-user', n: 9 }, { sel: '.client-logo', n: 10 }
   ]);
   await click('[data-act="notifs"]');
   await shot('02-notifications', [{ sel: '[data-act="notifs"]', n: 1 }, { sel: '.popover', n: 2 }], [sel('[data-act="notifs"]'), sel('.popover')], 14);

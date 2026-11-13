@@ -32,7 +32,7 @@ const { chromium } = require('playwright');
   const b = await chromium.launch(); const p = await b.newPage();
   await p.goto('file://' + src, { waitUntil: 'load' }); await p.waitForTimeout(500);
   await p.pdf({ path: out, format: 'A4', printBackground: true, displayHeaderFooter: true, headerTemplate: '<span></span>',
-    footerTemplate: '<div style="font-size:8px;color:#8790a3;width:100%;padding:0 14mm;display:flex;justify-content:space-between"><span>Lume for CIMB Niaga · User Guide · v1.0.0</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>',
+    footerTemplate: '<div style="font-size:8px;color:#8790a3;width:100%;padding:0 14mm;display:flex;justify-content:space-between"><span>CIMB Niaga Social Hub · User Guide · v1.1.0</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>',
     margin: { top: '16mm', bottom: '18mm', left: '14mm', right: '14mm' } });
   await b.close();
 })();
@@ -49,7 +49,7 @@ for i, line in enumerate(lines):
     fixed.append(line)
 md = '\n'.join(fixed)
 html = markdown.markdown(md, extensions=['tables', 'fenced_code', 'toc', 'sane_lists'])
-cover = '<div style="text-align:center;margin:40mm 0 16mm"><img src="icon.png" style="width:90px;border:0;margin:0 auto 14pt"></div>'
+cover = '<div style="text-align:center;margin:40mm 0 16mm"><img src="../web/brand/cimb-niaga-logo.png" style="width:260px;border:0;border-radius:0;margin:0 auto 14pt"></div>'
 tmp = DOCS / '_guide_print.html'
 tmp.write_text(f'<!DOCTYPE html><html><head><meta charset="utf-8"><title>Lume for CIMB Niaga · User Guide</title><style>{CSS}</style></head><body>{cover}{html}</body></html>')
 try:

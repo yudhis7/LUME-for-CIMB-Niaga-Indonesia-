@@ -1,6 +1,6 @@
-# Lume for CIMB Niaga · User Guide
+# CIMB Niaga Social Hub · User Guide
 
-**Version 1.0.0 · Pilot workspace · November 2026**
+**Powered by Lume · Version 1.1.0 · Pilot workspace · November 2026**
 
 Lume is Whale's social media hub, set up here for PT Bank CIMB Niaga Tbk. Headquarters plans the content, people publish it from their own accounts, and the data comes back. One console runs every official and affiliated account, and it's where you:
 
@@ -16,7 +16,7 @@ This guide walks through every screen. In each picture, the **red numbered circl
 
 ## Contents
 
-1. [Install and open](#1-install-and-open)
+1. [Open and sign in](#1-open-and-sign-in)
 2. [Getting around](#2-getting-around)
 3. [Roles and permissions](#3-roles-and-permissions)
 4. [Command centre](#4-command-centre)
@@ -38,44 +38,46 @@ This guide walks through every screen. In each picture, the **red numbered circl
 
 ---
 
-## 1. Install and open
+## 1. Open and sign in
 
-Lume comes in three forms. All three have the same features.
+The CIMB Niaga Social Hub runs in your web browser. There is nothing to install.
 
-| Version | Use it when | Where to get it |
+> **Access link (CIMB Niaga team only):**
+> [https://whale-alivia.stage.meetwhale.com/share/agi/artifact/5kBrYi3VWa6LnRfjRQhsH99d](https://whale-alivia.stage.meetwhale.com/share/agi/artifact/5kBrYi3VWa6LnRfjRQhsH99d)
+>
+> Use the link only for the pilot try-out and don't share it outside the CIMB Niaga team.
+
+1. Open the link in **Chrome, Edge or Safari** on a laptop or desktop.
+2. Bookmark it so you can come back.
+3. Sign in with one of the pilot accounts below.
+
+![Sign-in screen](guide/img/00-sign-in.png)
+
+### Pilot accounts
+
+Every account uses the password **`lume2026`**.
+
+| User ID | Name | Team |
 |---|---|---|
-| **Windows app** | You present or work on a Windows 10/11 PC | [`releases/v1.0.0/Lume-for-CIMB-Niaga.exe`](../releases/v1.0.0/Lume-for-CIMB-Niaga.exe), or the Releases page |
-| **Mac app** | You use macOS 14 Sonoma or later (Apple Silicon or Intel) | [`releases/v1.0.0/Lume-for-CIMB-Niaga-macOS.zip`](../releases/v1.0.0/Lume-for-CIMB-Niaga-macOS.zip) |
-| **Web page** | You can't install apps, or want to send a single file | [`web/dist/lume-cimb-niaga.html`](../web/dist/lume-cimb-niaga.html): open it in Chrome, Edge or Safari |
+| `dewi.anggraini` | Dewi Anggraini | Brand and Content (HQ) |
+| `agus.firmansyah` | Agus Firmansyah | Social Care Desk |
+| `maria.tambunan` | Maria Tambunan | Compliance and Legal |
+| `fikri.ramadhan` | Fikri Ramadhan | KejarMimpi team |
+| `sinta.maharani` | Sinta Maharani | HR · Life at CIMB Niaga |
+| `hasan.lubis` | Hasan Lubis | CIMB Niaga Syariah team |
+| `whale.admin` | Whale admin | Every team (role switcher) |
 
-### Windows
+- Tick **Remember me** to stay signed in on that browser for 7 days.
+- After 5 wrong passwords, sign-in pauses for 30 seconds.
+- A **Caps Lock** warning appears if Caps Lock is on.
 
-1. Download `Lume-for-CIMB-Niaga.exe`. Put it somewhere permanent, such as `Documents` or the Desktop.
-2. Double-click it.
-3. **First launch only:** the app isn't code-signed yet, so Windows may show *"Windows protected your PC"*. Click **More info**, then **Run anyway**.
-4. Optional: right-click the file and choose **Pin to Start** or **Pin to taskbar**.
+### Signing out
 
-The Windows app needs Microsoft's **WebView2 Runtime**, which is already on Windows 11 and on almost every updated Windows 10 PC. If it's missing, Lume tells you and offers to open Microsoft's download page.
-
-### macOS
-
-1. Download `Lume-for-CIMB-Niaga-macOS.zip` and double-click it to unzip.
-2. Drag **Lume for CIMB Niaga.app** into **Applications**.
-3. **First launch only:** the app isn't notarized by Apple yet, so macOS blocks it.
-   - Double-click the app once and choose **Done** on the warning.
-   - Open **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to *Lume for CIMB Niaga*.
-   - Confirm with your password.
-4. If macOS instead says the app *"is damaged"*, open **Terminal**, run this once, then open the app again:
-
-   ```
-   xattr -dr com.apple.quarantine "/Applications/Lume for CIMB Niaga.app"
-   ```
-
-The menu bar works like any Mac app: **Lume → Quit** (⌘Q), **Edit → Copy/Paste**, **View → Reload**, **Window → Minimize**.
+Click your name at the top right (the account menu) and choose **Sign out**.
 
 ### Your data
 
-Everything you change (tasks, replies, tickets, roles, points) is saved on your computer and is still there next time you open Lume. To start a demo from a clean state, use **Reset demo data** (see [Getting around](#2-getting-around)).
+Everything you change (tasks, replies, tickets, points) is saved in your browser and is still there next time you open the link on the same browser. Another browser or computer starts with its own copy. To start a demo from a clean state, use **Reset demo data** (see [Getting around](#2-getting-around)).
 
 ---
 
@@ -95,9 +97,11 @@ Everything you change (tasks, replies, tickets, roles, points) is saved on your 
 3. **Alivia AI status.** *templates* means captions and replies come from the approved template library. *live* means Claude writes them; this happens only in the claude.ai web version.
 4. **Notifications.** Scam waves, crises, items waiting for Compliance and tickets near their OJK deadline.
 5. **Advocate app.** Opens the phone app that employees and community members use, beside the console.
-6. **Role switcher.** Lets you work as the Brand team, Care desk, Compliance, KejarMimpi, HR or Syariah team. See [Roles and permissions](#3-roles-and-permissions).
+6. **Role switcher** (whale.admin only). Lets you work as the Brand team, Care desk, Compliance, KejarMimpi, HR or Syariah team. See [Roles and permissions](#3-roles-and-permissions).
 7. **Reset demo data.** Restores the original sample workspace. Use it before each demo.
 8. **Page header.** Every page starts with its title, a one-line explanation and its main buttons on the right.
+9. **Account menu.** Shows who is signed in and their team. Use it to sign out.
+10. **CIMB Niaga logo.** Marks the workspace as CIMB Niaga's own hub.
 
 | Notifications | Search |
 |---|---|
@@ -110,9 +114,9 @@ Everything you change (tasks, replies, tickets, roles, points) is saved on your 
 
 ## 3. Roles and permissions
 
-Each team publishes only to its own accounts. Compliance sees everything. Switch roles from the top bar to see what each team can do.
+Each team publishes only to its own accounts. Compliance sees everything. Your role comes from the account you sign in with. To see every team, sign in as `whale.admin` and use the role switcher in the top bar.
 
-| Role | Sample user | Can publish to | Main work |
+| Role | Sign-in user | Can publish to | Main work |
 |---|---|---|---|
 | Brand and Content (HQ) | Dewi Anggraini | @cimb_niaga (Instagram, Threads), @cimb.niaga (TikTok), @CIMBIndonesia (Facebook), @CIMBNiaga (X) | Calendar, tasks, library, shared-calendar planning |
 | Social Care Desk | Agus Firmansyah | None (replies only) | Care desk, tickets |
@@ -734,7 +738,7 @@ CIMB Niaga's complaint system remains the system of record. Compliance aligns th
 
 ## 17. 10-minute demo script
 
-Click **Reset demo data** first.
+Open the [Social Hub link](https://whale-alivia.stage.meetwhale.com/share/agi/artifact/5kBrYi3VWa6LnRfjRQhsH99d), sign in as `whale.admin` (password `lume2026`), then click **Reset demo data**.
 
 | Minute | Show | Where |
 |---|---|---|
@@ -754,39 +758,26 @@ Click **Reset demo data** first.
 **I want to start the demo over.**
 Click **Reset demo data** at the bottom of the left menu.
 
-**Windows: "Windows protected your PC".**
-Click **More info → Run anyway**. This happens because the app isn't code-signed yet.
+**I can't sign in.**
+Check the user ID (for example `dewi.anggraini`, all lower case) and the password `lume2026`, and that Caps Lock is off. After 5 wrong tries, wait 30 seconds.
 
-**Windows: Lume says WebView2 is missing.**
-Click **Yes** to open Microsoft's download page and install the **Evergreen WebView2 Runtime**. Then open Lume again.
+**I see the wrong team's menus.**
+Sign out from the account menu and sign in with the account for your team.
 
-**Mac: "cannot be opened" or "Apple could not verify".**
-Go to **System Settings → Privacy & Security → Open Anyway**.
-
-**Mac: "is damaged and can't be opened".**
-Run `xattr -dr com.apple.quarantine "/Applications/Lume for CIMB Niaga.app"` in Terminal, then open the app again.
-
-**Mac: the app won't start.**
-Lume needs **macOS 14 Sonoma or later**. Check under ** → About This Mac**.
+**The page doesn't open.**
+Use a current version of Chrome, Edge or Safari, and check that your network allows the link's address. Ask the Whale team if it is still blocked.
 
 **The AI badge says "templates".**
-The desktop apps and the offline web page draft from the approved template library. Live Claude-written drafts are in the claude.ai web version, after you allow it once. The compliance checks are rules, and they work the same everywhere.
+Drafts come from the approved template library in the pilot. The compliance checks are rules, and they work the same everywhere.
 
-**Two copies of Lume are open and the data looks different.**
-Each copy keeps its own data. Close one and reopen Lume.
+**My colleague sees different data.**
+Each browser keeps its own copy of the pilot workspace.
 
 **Where is my data stored?**
-Only on your computer:
-- Windows: a folder in `%APPDATA%` named after the `.exe` file, for example `%APPDATA%\Lume-for-CIMB-Niaga.exe\` (plus runtime files in `%LOCALAPPDATA%\Lume for CIMB Niaga\`). If you rename the `.exe`, Lume starts with fresh data.
-- Mac: `~/Library/WebKit/im.whale.lume.cimbniaga/`
-- Web page: your browser's storage for that file
-
-**How do I uninstall?**
-- Windows: delete the `.exe` and the two folders above.
-- Mac: move the app to the Trash.
+In your browser's storage for the Social Hub site. Clearing the browser's site data resets it.
 
 **Copy buttons don't work in the web page.**
-Some browsers block the clipboard for local files. Select the text and press Ctrl+C (⌘C).
+Some browsers block the clipboard. Select the text and press Ctrl+C (⌘C).
 
 ---
 
