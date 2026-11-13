@@ -278,10 +278,10 @@ ACT['cal-stagger'] = () => {
   render();
 };
 ACT['post-open'] = el => {
-  const p = S.posts.find(x => x.id === el.dataset.id); const a = accById(p.acc); const can = canPublish(p.acc) && p.status !== 'published';
+  const p = S.posts.find(x => x.id === el.dataset.id); const a = accById(p.acc); const can = canPublish(p.acc) && !['published', 'publishing'].includes(p.status);
   const chk = p.caption ? checkCompliance(p.caption, { product: p.product }) : null;
-  openModal(esc(p.title), `<div class="row" style="margin-bottom:10px">${plat(a.platform, 22)}<b>${esc(a.handle)}</b><span class="pill">${esc(p.format)}</span><span class="pill ${p.status === 'published' ? 'good' : 'blue'}">${p.status}</span></div>
-    <dl class="kv"><dt>Campaign</dt><dd>${esc(CAMPAIGNS[p.camp] ? CAMPAIGNS[p.camp].name : p.camp)}</dd><dt>When</dt><dd>${fmtD(p.at)}, ${fmtT(p.at)} WIB</dd><dt>AI compliance</dt><dd>${chk ? verdictPill(chk.verdict) : '<span class="pill good">Approved asset from the library</span>'}</dd><dt>Owner</dt><dd>${ROLES[a.owner] ? ROLES[a.owner].name : '—'}</dd></dl>
+  openModal(esc(p.title), `<div class="row" style="margin-bottom:10px">${plat(a.platform, 22)}<b>${esc(a.handle)}</b><span class="pill">${esc(p.format)}</span><span class="pill ${p.status === 'published' ? 'good' : p.status === 'failed' ? 'crit' : 'blue'}">${p.status}</span></div>
+    <dl class="kv"><dt>Campaign</dt><dd>${esc(CAMPAIGNS[p.camp] ? CAMPAIGNS[p.camp].name : p.camp)}</dd><dt>When</dt><dd>${fmtD(p.at)}, ${fmtT(p.at)} WIB</dd><dt>AI compliance</dt><dd>${chk ? verdictPill(chk.verdict) : '<span class="pill good">Approved asset from the library</span>'}</dd><dt>Owner</dt><dd>${ROLES[a.owner] ? ROLES[a.owner].name : '—'}</dd>${p.pub ? `<dt>On the platform</dt><dd>${pubLine(p)}</dd>` : ''}${p.approvedBy ? `<dt>Approved by</dt><dd>${esc(p.approvedBy)} (Compliance)</dd>` : ''}</dl>
     ${p.caption ? `<div class="preview-text mt12">${chk ? highlight(p.caption, chk.marks) : esc(p.caption)}</div>` : ''}
     ${p.status === 'published' ? `<div class="grid g4 mt12">${['Views', 'Likes', 'Comments', 'Clicks'].map((k, i) => `<div class="card kpi"><div class="v num">${fmtK([24800, 610, 88, 142][i] * (1 + (hashStr(p.id) % 5) / 10))}</div><div class="l">${k}</div></div>`).join('')}</div>` : ''}
     ${!can && p.status !== 'published' ? `<div class="callout warn mt12">${icon('lock', 16)}<div>${ROLES[S.role].name} can view this post but can’t change it. Each team publishes only to its own accounts.</div></div>` : ''}`,

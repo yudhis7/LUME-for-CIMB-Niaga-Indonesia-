@@ -34,6 +34,17 @@ Use the **Role** switcher in the top bar to see each team's permissions (Brand, 
 |---|---|
 | ![Care desk](docs/screenshots/care.png) | ![Advocate app](docs/screenshots/advocate-app.png) |
 
+## Lume engine (back end)
+
+[`server/`](server) is the engine that makes the console a real, shared system: one workspace in PostgreSQL for every team, live updates, sign-in with sessions, server-side permission and compliance checks, publishing and replies through Instagram, Facebook, Threads, X and TikTok, webhook intake with masking and triage, ticket numbering and hand-off to CIMB Niaga's complaint system, the OJK clock with alerts, scam-wave alerts, WhatsApp task alerts and a mobile page for advocates, Claude drafting, and a hash-chained audit log. It runs in **sandbox mode** (every platform call simulated) until real accounts are connected.
+
+```bash
+cp server/.env.example .env && docker compose up -d --build    # then open http://localhost:8080
+```
+
+- [`server/README.md`](server/README.md): running, configuration, API and tests
+- [`docs/INFRASTRUCTURE.md`](docs/INFRASTRUCTURE.md): what to host and where (Indonesian rules), sizing, security, the platform access to arrange, and what is still to do before production
+
 ## Run it
 
 Full install steps, including the first-launch security prompts, are in the [user guide](docs/USER_GUIDE.md#1-install-and-open).
@@ -64,6 +75,10 @@ python3 build.py --edition cimb               # → web/dist/lume-cimb-niaga-des
 
 # Tests (Playwright + Chromium)
 node test/routes.js && node test/flows.js && node test/smoke.js
+node test/server-mode.js http://localhost:8080   # against a running engine
+
+# Engine (Node.js 22, PostgreSQL, Redis): see server/README.md
+cd server && npm ci && npm run build && node dist/index.js all
 
 # Desktop apps (Go 1.22+, no cgo): see desktop/README-BUILD.md
 cd desktop && ./build.sh
@@ -77,11 +92,11 @@ The desktop shell (`desktop/`) embeds the CIMB Niaga edition of the web build an
 
 - **Sample data.** Account figures come from Social Blade public data (about 22 October 2026), as cited in the proposal. Advocates, creators, messages and tickets are fictional.
 - **Product facts are placeholders.** Rates, tenors and fees on the product sheets (for example, KPR 3.88%) exist only to demonstrate the product-facts check. Replace them with CIMB Niaga's real product sheets.
-- **AI.** Captions, replies and the daily brief come from the approved template library. The published claude.ai version can write them live with Claude. The compliance checks are deterministic rules.
+- **AI.** Captions, replies and the daily brief come from the approved template library. The published claude.ai version, and the engine when it has a Claude API key, can write them live with Claude. The compliance checks are deterministic rules.
 - **Regulation summaries** (POJK 6/2026, POJK 22/2023, SEOJK 20/2025) are summaries only; CIMB Niaga Compliance and Legal confirm how each rule applies.
 
 ## Credits
 
 - **[@yudhis7](https://github.com/yudhis7)** · project owner: the CIMB Niaga social media growth proposal, requirements and direction for the pilot
-- **Claude** (Anthropic) · co-builder: web console, Windows and macOS apps, user guide
+- **Claude** (Anthropic) · co-builder: web console, Lume engine, Windows and macOS apps, user guide
 - Built on **Whale Lume**; desktop apps use [go-webview](https://github.com/abemedia/go-webview) (MIT) and [purego](https://github.com/ebitengine/purego) (Apache-2.0)

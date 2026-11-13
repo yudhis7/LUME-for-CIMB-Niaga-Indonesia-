@@ -1,0 +1,7 @@
+**/node_modules
+server/dist
+web/shots
+releases
+desktop
+docs
+.git

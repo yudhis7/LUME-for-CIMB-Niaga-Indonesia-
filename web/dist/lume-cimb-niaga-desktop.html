@@ -1196,7 +1196,8 @@ function checkCompliance(text, ctx = {}) {
   } else add('facts', true, 'No product tag · nothing to compare');
   // personal & security data
   { const mk = maskPII(t); const hits = [];
-    const ask = [...t.matchAll(/(kirim(?:kan)?|sebutkan|berikan|bagikan|dm(?:kan)?|minta)\s+(?:kode\s+)?(otp|pin|password|nomor kartu|no\.? kartu|cvv|nomor rekening)/gi)].filter(m => !/jangan\s+$/i.test(t.slice(Math.max(0, m.index - 8), m.index)) && !/tidak pernah\s+$/i.test(t.slice(Math.max(0, m.index - 14), m.index)));
+    // "kirim OTP" asks for security data; "tidak pernah meminta OTP" / "jangan berikan PIN" warns against it
+    const ask = [...t.matchAll(/\b(?:me)?(kirim(?:kan)?|sebutkan|berikan|bagikan|dm(?:kan)?|minta)\s+(?:kode\s+)?(otp|pin|password|nomor kartu|no\.? kartu|cvv|nomor rekening)/gi)].filter(m => !/\b(?:jangan|tidak|tak|bukan|never|don'?t)\b(?:\s+\S+){0,2}\s+$/i.test(t.slice(Math.max(0, m.index - 28), m.index)));
     ask.forEach(m => hits.push({ i: m.index, len: m[0].length, w: m[0] }));
     [...t.matchAll(/\b\d(?:[ -]?\d){7,18}\b/g)].filter(m => !isOfficialNum(m[0])).forEach(m => hits.push({ i: m.index, len: m[0].length, w: m[0] }));
     const img = (ctx.imageFlags || []);
@@ -1559,10 +1560,10 @@ ACT['cal-stagger'] = () => {
   render();
 };
 ACT['post-open'] = el => {
-  const p = S.posts.find(x => x.id === el.dataset.id); const a = accById(p.acc); const can = canPublish(p.acc) && p.status !== 'published';
+  const p = S.posts.find(x => x.id === el.dataset.id); const a = accById(p.acc); const can = canPublish(p.acc) && !['published', 'publishing'].includes(p.status);
   const chk = p.caption ? checkCompliance(p.caption, { product: p.product }) : null;
-  openModal(esc(p.title), `<div class="row" style="margin-bottom:10px">${plat(a.platform, 22)}<b>${esc(a.handle)}</b><span class="pill">${esc(p.format)}</span><span class="pill ${p.status === 'published' ? 'good' : 'blue'}">${p.status}</span></div>
-    <dl class="kv"><dt>Campaign</dt><dd>${esc(CAMPAIGNS[p.camp] ? CAMPAIGNS[p.camp].name : p.camp)}</dd><dt>When</dt><dd>${fmtD(p.at)}, ${fmtT(p.at)} WIB</dd><dt>AI compliance</dt><dd>${chk ? verdictPill(chk.verdict) : '<span class="pill good">Approved asset from the library</span>'}</dd><dt>Owner</dt><dd>${ROLES[a.owner] ? ROLES[a.owner].name : '—'}</dd></dl>
+  openModal(esc(p.title), `<div class="row" style="margin-bottom:10px">${plat(a.platform, 22)}<b>${esc(a.handle)}</b><span class="pill">${esc(p.format)}</span><span class="pill ${p.status === 'published' ? 'good' : p.status === 'failed' ? 'crit' : 'blue'}">${p.status}</span></div>
+    <dl class="kv"><dt>Campaign</dt><dd>${esc(CAMPAIGNS[p.camp] ? CAMPAIGNS[p.camp].name : p.camp)}</dd><dt>When</dt><dd>${fmtD(p.at)}, ${fmtT(p.at)} WIB</dd><dt>AI compliance</dt><dd>${chk ? verdictPill(chk.verdict) : '<span class="pill good">Approved asset from the library</span>'}</dd><dt>Owner</dt><dd>${ROLES[a.owner] ? ROLES[a.owner].name : '—'}</dd>${p.pub ? `<dt>On the platform</dt><dd>${pubLine(p)}</dd>` : ''}${p.approvedBy ? `<dt>Approved by</dt><dd>${esc(p.approvedBy)} (Compliance)</dd>` : ''}</dl>
     ${p.caption ? `<div class="preview-text mt12">${chk ? highlight(p.caption, chk.marks) : esc(p.caption)}</div>` : ''}
     ${p.status === 'published' ? `<div class="grid g4 mt12">${['Views', 'Likes', 'Comments', 'Clicks'].map((k, i) => `<div class="card kpi"><div class="v num">${fmtK([24800, 610, 88, 142][i] * (1 + (hashStr(p.id) % 5) / 10))}</div><div class="l">${k}</div></div>`).join('')}</div>` : ''}
     ${!can && p.status !== 'published' ? `<div class="callout warn mt12">${icon('lock', 16)}<div>${ROLES[S.role].name} can view this post but can’t change it. Each team publishes only to its own accounts.</div></div>` : ''}`,
@@ -1933,7 +1934,7 @@ function careDetail(m) {
       <div class="callout violet small" style="margin-bottom:12px">${icon('spark', 16)}<div class="grow"><b>Alivia AI:</b> ${ai.type} · ${ai.sentiment} · ${ai.product} · urgency ${ai.urgency}${ai.theme ? ' · theme “' + ai.theme + '”' : ''} <span class="muted">(${Math.round(ai.conf * 100)}% · ${esc(ai.why.join('; '))})</span><br><b>Action:</b> ${TYPE_META[ai.type].act} · first reply ${TYPE_META[ai.type].label}${m.pii.length ? `<br><b>Masked:</b> ${m.pii.join(', ')}. ${ai.type === 'Complaint' ? 'Never ask for PIN, OTP or card numbers in public.' : ''}` : ''}</div>
       <select class="input" style="width:auto;padding:3px 6px" data-change="care-retype" data-id="${m.id}" aria-label="Correct the AI type"><option value="">Correct type…</option>${TYPE_ORDER.map(t => `<option>${t}</option>`).join('')}</select></div>
       <div class="thread"><div class="msg">${av(m.handle, 28)}<div class="bub">${piiMark(m.text)}${m.shares ? `<div class="tiny muted mt8">${fmtN(m.shares)} reposts</div>` : ''}</div></div>
-        ${m.thread.map(r => `<div class="msg ${r.from === 'brand' ? 'brand' : ''}">${r.from === 'brand' ? av('CN', 28, '#c8102e') : av(m.handle, 28)}<div class="bub">${esc(r.text)}<div class="tiny muted mt8">${r.from === 'brand' ? esc(a.handle) + ' · approved by ' + esc(r.by) : esc(m.handle)} · ${fmtT(r.at)}</div></div></div>`).join('')}</div>
+        ${m.thread.map((r, ri) => `<div class="msg ${r.from === 'brand' ? 'brand' : ''}">${r.from === 'brand' ? av('CN', 28, '#c8102e') : av(m.handle, 28)}<div class="bub">${esc(r.text)}<div class="tiny muted mt8">${r.from === 'brand' ? esc(a.handle) + ' · approved by ' + esc(r.by) : esc(m.handle)} · ${fmtT(r.at)}${r.from === 'brand' ? deliveryTag(m, ri) : ''}</div></div></div>`).join('')}</div>
       ${m.status !== 'hidden' ? `<div class="hr"></div>
       <label class="fl" for="care-reply">Public reply as ${esc(a.handle)}</label>
       <textarea class="input mt8" id="care-reply" data-input="care-chk" rows="3" placeholder="Draft a reply or let Alivia draft from the approved library">${esc(draft)}</textarea>
@@ -2452,6 +2453,255 @@ ACT['ph-post'] = () => {
   }, 1400);
 };
 
+/* ================= Engine connection (server mode) =================
+   When this page is served by the Lume engine (it answers /api/v1/health), the console signs in
+   against the engine, loads the shared workspace from it, sends every change back as field-level
+   patches, and receives everyone else's changes live. The engine re-checks permissions and the
+   compliance rules, publishes and replies through the platform connectors, and keeps the audit
+   trail. Opened as a file or in the desktop apps, the console keeps working on its own as before. */
+const SERVER = {
+  on: false, health: null, user: null, clientId: Math.random().toString(36).slice(2, 12),
+  base: {}, ver: {}, order: {}, metaBase: {}, pushing: false, again: false, timer: null,
+  lastAct: null, lastArgs: null, es: null, pendingRender: false, renderTimer: null
+};
+const SYNC_COLS = ['accounts', 'rules', 'pointRules', 'watch', 'advocates', 'assets', 'tasks', 'posts', 'inbox', 'tickets', 'notifs', 'audit', 'ledger', 'negLog'];
+const SYNC_META = ['listen', 'brandReach'];
+const APPEND_ONLY = new Set(['audit', 'ledger']);
+// actions that reach people outside the console even when they change nothing on screen
+const SERVER_ACTIONS = new Set(['care-fraud', 'care-recog', 'task-remind', 'brief-send', 'wave-push', 'care-escalate']);
+
+async function serverDetect() {
+  if (!/^https?:$/.test(location.protocol)) return false;
+  try {
+    const r = await fetch('/api/v1/health', { cache: 'no-store' });
+    if (!r.ok) return false;
+    const h = await r.json();
+    if (!h || h.engine !== 'lume') return false;
+    SERVER.on = true; SERVER.health = h;
+    return true;
+  } catch (e) { return false; }
+}
+
+async function api(method, path, body) {
+  const headers = { 'x-lume-csrf': '1', 'x-lume-client': SERVER.clientId };
+  if (body !== undefined) headers['content-type'] = 'application/json';
+  if (S && S.role) headers['x-lume-role'] = S.role;
+  const r = await fetch(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), credentials: 'same-origin', cache: 'no-store' });
+  let data = null; try { data = await r.json(); } catch (e) { }
+  if (r.status === 401 && SERVER.user && !path.includes('/auth/')) serverSignedOut('Your session ended. Sign in again.');
+  return { ok: r.ok, status: r.status, data: data || {} };
+}
+
+/* ---------- sign-in ---------- */
+async function serverBoot() {
+  const me = await api('GET', '/api/v1/auth/me');
+  if (!me.ok) { S = blankState(); showSignin(); return; }
+  setServerUser(me.data.user, me.data.session);
+  if (!(await serverLoad())) return;
+  enterApp(false);
+}
+function blankState() { const s = { v: 3, role: 'brand', ui: {}, ticketSeq: 0 }; SYNC_COLS.forEach(c => s[c] = []); s.listen = { themes: {}, byAcc: {}, sent: { pos: 0, neg: 0, neu: 0 }, hourly: [], firstReply: {} }; s.brandReach = {}; s.phone = phoneInit(); return s; }
+function setServerUser(u, sess) {
+  SERVER.user = { uid: u.uid, name: u.name, title: u.title, role: u.role, admin: !!u.admin };
+  SESSION = { uid: u.uid, at: (sess && sess.at) || Date.now(), exp: (sess && sess.exp) || 0 };
+}
+async function serverSignin(uid, pw, remember) {
+  const r = await api('POST', '/api/v1/auth/login', { uid, password: pw, remember: !!remember });
+  if (!r.ok) return r;
+  setServerUser(r.data.user, r.data.session);
+  if (!(await serverLoad())) return { ok: false, status: 500, data: { error: 'Signed in, but the workspace did not load. Try again.' } };
+  return r;
+}
+async function serverSignOut() {
+  await api('POST', '/api/v1/auth/logout').catch(() => null);
+  serverSignedOut('You have signed out.');
+}
+function serverSignedOut(msg) {
+  if (SERVER.es) { SERVER.es.close(); SERVER.es = null; }
+  SERVER.user = null; SESSION = null; closePops(); closeModal();
+  document.body.classList.remove('has-drawer');
+  showSignin(msg);
+}
+
+/* ---------- load ---------- */
+async function serverLoad() {
+  const r = await api('GET', '/api/v1/workspace');
+  if (!r.ok) { toast(r.data.error || 'Could not load the workspace', 'alert'); return false; }
+  const st = r.data.state;
+  let phone = null, role = null;
+  try { phone = JSON.parse(sessionStorage.getItem('lume-phone') || 'null'); role = sessionStorage.getItem('lume-role'); } catch (e) { }
+  S = { ...st, v: 3, ui: {}, ticketSeq: st.ticketSeq || 0, seededAt: st.seededAt || Date.now(), phone: phone || phoneInit() };
+  S.role = SERVER.user.admin ? (ROLES[role] ? role : 'brand') : SERVER.user.role;
+  SERVER.base = {}; SERVER.ver = {}; SERVER.order = {};
+  SYNC_COLS.forEach(c => {
+    S[c] = S[c] || [];
+    SERVER.base[c] = new Map(S[c].map(d => [d.id, JSON.stringify(d)]));
+    SERVER.ver[c] = new Map(Object.entries((r.data.versions || {})[c] || {}));
+    SERVER.order[c] = S[c].map(d => d.id).join('\n');
+  });
+  SYNC_META.forEach(k => { SERVER.metaBase[k] = JSON.stringify(S[k]); });
+  SERVER.health = { ...(SERVER.health || {}), ...(r.data.server || {}) };
+  S.inbox.forEach(m => { if (!m.ai) prepInbox(m); });
+  serverListen();
+  AI.init();
+  return true;
+}
+
+/* ---------- push local changes ---------- */
+function serverQueue() {
+  clearTimeout(SERVER.timer);
+  SERVER.timer = setTimeout(serverPush, 120);
+}
+function serverDiff() {
+  const mutations = [], order = {}, meta = {}, sent = {};
+  SYNC_COLS.forEach(col => {
+    const list = S[col] || (S[col] = []);
+    const base = SERVER.base[col] || (SERVER.base[col] = new Map());
+    const seen = new Set();
+    list.forEach(d => {
+      if (!d.id) d.id = uid(col.slice(0, 2));
+      seen.add(d.id);
+      const j = JSON.stringify(d); const b = base.get(d.id);
+      if (b === j) return;
+      if (b === undefined) mutations.push({ col, id: d.id, op: 'put', set: JSON.parse(j), baseVer: 0 });
+      else {
+        const prev = JSON.parse(b); const set = {}; const unset = [];
+        Object.keys(d).forEach(k => { if (JSON.stringify(d[k]) !== JSON.stringify(prev[k])) set[k] = d[k]; });
+        Object.keys(prev).forEach(k => { if (!(k in d)) unset.push(k); });
+        if (!Object.keys(set).length && !unset.length) { base.set(d.id, j); return; }
+        mutations.push({ col, id: d.id, op: 'put', set: JSON.parse(JSON.stringify(set)), unset, baseVer: +(SERVER.ver[col].get(d.id) || 0) });
+      }
+      base.set(d.id, j); sent[col + '\u0001' + d.id] = j;
+    });
+    [...base.keys()].forEach(id => { if (!seen.has(id)) { if (!APPEND_ONLY.has(col)) mutations.push({ col, id, op: 'del' }); base.delete(id); } });
+    const ids = list.map(d => d.id).join('\n');
+    if (ids !== SERVER.order[col]) { order[col] = list.map(d => d.id); SERVER.order[col] = ids; }
+  });
+  SYNC_META.forEach(k => { const j = JSON.stringify(S[k]); if (j !== SERVER.metaBase[k]) { meta[k] = S[k]; SERVER.metaBase[k] = j; } });
+  const action = SERVER.lastAct; const args = SERVER.lastArgs || {};
+  const sendAction = action && (mutations.length || SERVER_ACTIONS.has(action));
+  if (!mutations.length && !Object.keys(order).length && !Object.keys(meta).length && !sendAction) return null;
+  SERVER.lastAct = null; SERVER.lastArgs = null;
+  return { body: { action: sendAction ? action : undefined, args: sendAction ? args : undefined, mutations, order, meta }, sent };
+}
+async function serverPush() {
+  if (!SERVER.on || !SERVER.user || !S) return;
+  if (SERVER.pushing) { SERVER.again = true; return; }
+  const d = serverDiff(); if (!d) return;
+  SERVER.pushing = true;
+  try {
+    const r = await api('POST', '/api/v1/sync', d.body);
+    if (!r.ok) { toast(r.data.error || 'Changes were not saved; reloading', 'alert'); await serverLoad(); render(); return; }
+    let redraw = false;
+    Object.entries(r.data.remap || {}).forEach(([from, to]) => {
+      S.tickets = S.tickets.filter(t => t.id !== from); SERVER.base.tickets.delete(from);
+      toast(`Ticket number ${from} was taken; this complaint is ${to}`, 'ticket'); redraw = true;
+      if (location.hash === '#ticket-' + from) location.hash = '#ticket-' + to;
+    });
+    (r.data.applied || []).forEach(c => { if (serverApply(c, d.sent)) redraw = true; });
+    (r.data.rejected || []).forEach((x, i) => {
+      if (i === 0) toast(x.reason, x.code === 'forbidden' ? 'lock' : 'x');
+      serverApply({ col: x.col, id: x.id, op: x.current ? 'put' : 'del', data: x.current, ver: x.ver }, null, true);
+      redraw = true;
+    });
+    if (redraw) scheduleRender(true);
+  } catch (e) {
+    toast('Connection problem: your last change may not be saved', 'alert');
+  } finally {
+    SERVER.pushing = false;
+    if (SERVER.again) { SERVER.again = false; serverQueue(); }
+  }
+}
+
+/* ---------- apply a change from the engine ---------- */
+function serverApply(c, sent, force) {
+  if (c.col === 'meta') {
+    if (c.id === 'ticketSeq') S.ticketSeq = Math.max(S.ticketSeq || 0, +c.data || 0);
+    else if (SYNC_META.includes(c.id)) { S[c.id] = c.data; SERVER.metaBase[c.id] = JSON.stringify(c.data); }
+    return false;
+  }
+  if (!SYNC_COLS.includes(c.col)) return false;
+  const list = S[c.col] || (S[c.col] = []);
+  const base = SERVER.base[c.col]; const idx = list.findIndex(d => d.id === c.id);
+  if (c.op === 'del') {
+    if (idx >= 0) list.splice(idx, 1);
+    base.delete(c.id); SERVER.ver[c.col].delete(c.id);
+    SERVER.order[c.col] = list.map(d => d.id).join('\n');
+    return idx >= 0;
+  }
+  const j = JSON.stringify(c.data);
+  if (c.ver != null) SERVER.ver[c.col].set(c.id, c.ver);
+  if (idx >= 0) {
+    const local = list[idx]; const localJ = JSON.stringify(local);
+    const key = c.col + '\u0001' + c.id;
+    // our own change came back: keep any newer local edits; they go out in the next push
+    if (!force && sent && sent[key] !== undefined && sent[key] !== localJ) { base.set(c.id, j); serverQueue(); return false; }
+    base.set(c.id, j);
+    if (localJ === j) return false;
+    Object.keys(local).forEach(k => delete local[k]);
+    Object.assign(local, JSON.parse(j));
+    return true;
+  }
+  const doc = JSON.parse(j);
+  // new item from someone else: place it the way the console lists it
+  const FRONT = ['inbox', 'notifs', 'audit', 'tickets', 'watch', 'assets', 'tasks', 'negLog'];
+  if (FRONT.includes(c.col)) list.unshift(doc); else list.push(doc);
+  if (c.col === 'tickets') list.sort((a, b) => b.createdAt - a.createdAt);
+  if (c.col === 'notifs' && list.length > 40) list.length = 40;
+  base.set(c.id, j);
+  SERVER.order[c.col] = list.map(d => d.id).join('\n');
+  return true;
+}
+
+/* ---------- live updates ---------- */
+function serverListen() {
+  if (SERVER.es) SERVER.es.close();
+  const es = new EventSource('/api/v1/events?client=' + encodeURIComponent(SERVER.clientId));
+  SERVER.es = es;
+  es.onmessage = ev => {
+    let msg; try { msg = JSON.parse(ev.data); } catch (e) { return; }
+    if (msg.type === 'reload') { toast(msg.text || 'The workspace was updated', 'bell'); serverLoad().then(ok => { if (ok) render(); }); return; }
+    if (msg.type !== 'changes') return;
+    let changed = false;
+    (msg.changes || []).forEach(c => { if (serverApply(c, null, true)) changed = true; });
+    if (changed) scheduleRender(false);
+  };
+  es.onerror = () => { /* the browser reconnects by itself */ };
+}
+// Don't redraw under someone's fingers: wait while they type or a dialog is open.
+function isEditing() {
+  if ($('#modal')) return true;
+  const a = document.activeElement;
+  if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.id !== 'gsearch') return true;
+  return $$('#main textarea, #drawer textarea').some(t => t.value !== t.defaultValue);
+}
+function scheduleRender(now) {
+  SERVER.pendingRender = true;
+  clearTimeout(SERVER.renderTimer);
+  SERVER.renderTimer = setTimeout(() => {
+    if (!SERVER.pendingRender) return;
+    if (isEditing()) { renderTop(); renderNav(); return; }
+    SERVER.pendingRender = false; render();
+  }, now ? 0 : 250);
+}
+setInterval(() => { if (SERVER.on && SERVER.pendingRender && !isEditing()) { SERVER.pendingRender = false; render(); } }, 2000);
+
+/* ---------- small helpers used by the views ---------- */
+function deliveryTag(m, i) {
+  if (!SERVER.on || !m.deliveries || !m.deliveries[i]) return '';
+  const d = m.deliveries[i];
+  if (d.status === 'sent') return ' · <span title="Delivered to the platform">✓ sent</span>';
+  if (d.status === 'queued') return ' · sending…';
+  if (d.status === 'manual') return ` · <span style="color:var(--warn)" title="${esc(d.error || '')}">post it in the platform</span>`;
+  return ` · <span style="color:var(--crit)" title="${esc(d.error || '')}">not delivered</span>`;
+}
+function pubLine(p) {
+  if (!p.pub) return '';
+  if (p.pub.status === 'sent') return `<a href="${esc(p.pub.url)}" target="_blank" rel="noopener">${esc(p.pub.url.replace(/^https:\/\//, ''))}</a>`;
+  if (p.pub.status === 'queued') return 'Publishing…';
+  return `<span style="color:var(--crit)">${esc(p.pub.error || 'Not published')}</span>`;
+}
+
 /* ================= Sign-in (CIMB Niaga desktop edition) =================
    Active only when the build sets EDITION.signin. The pilot sign-in decides which team
    view a person gets; it is checked on this device and is not connected to CIMB Niaga's
@@ -2487,8 +2737,8 @@ function clearSession() {
   try { sessionStorage.removeItem(SESSION_KEY); } catch (e) { }
   try { localStorage.removeItem(SESSION_KEY); } catch (e) { }
 }
-const sessionAccount = () => SESSION ? PILOT_ACCOUNTS.find(a => a.uid === SESSION.uid) : null;
-const isAdmin = () => !EDITION.signin || !!(sessionAccount() || {}).admin;
+const sessionAccount = () => SERVER.on ? SERVER.user : SESSION ? PILOT_ACCOUNTS.find(a => a.uid === SESSION.uid) : null;
+const isAdmin = () => (!EDITION.signin && !SERVER.on) || !!(sessionAccount() || {}).admin;
 function applySessionRole() {
   const a = sessionAccount();
   if (a && !a.admin) S.role = a.role;
@@ -2544,10 +2794,10 @@ function showSignin(message) {
         <div class="si-sso small muted">${icon('lock', 13)}In production, Lume uses CIMB Niaga single sign-on, set up with IT &amp; InfoSec.</div>
       </form>
       <div class="si-pilot">
-        <div class="row between"><b class="small">Pilot accounts</b><span class="tiny muted">password <code>${PILOT_PASSWORD}</code></span></div>
+        <div class="row between"><b class="small">Pilot accounts</b>${!SERVER.on || (SERVER.health && SERVER.health.demo) ? `<span class="tiny muted">password <code>${PILOT_PASSWORD}</code></span>` : ''}</div>
         <div class="si-accts">${PILOT_ACCOUNTS.map(a => `<button type="button" class="si-acct" data-uid="${a.uid}">${av(a.name, 26, a.admin ? '#1668e3' : '#790007')}<span><b>${esc(a.name)}</b><small>${esc(a.title)}</small></span></button>`).join('')}</div>
       </div>
-      <p class="si-warn tiny">${icon('shield', 12)}Sign-in is checked on this device only. Never enter your OCTO, internet banking or email password here.</p>
+      <p class="si-warn tiny">${icon('shield', 12)}${SERVER.on ? 'Sign-in is checked by the Lume engine for this workspace.' : 'Sign-in is checked on this device only.'} Never enter your OCTO, internet banking or email password here.</p>
     </section>
   </div>`;
   document.body.appendChild(root);
@@ -2558,8 +2808,9 @@ function showSignin(message) {
   const caps = e => { if (e.getModifierState) $('#si-caps').hidden = !e.getModifierState('CapsLock'); };
   pw.addEventListener('keydown', caps); pw.addEventListener('keyup', caps);
   root.querySelectorAll('.si-acct').forEach(b => {
-    b.addEventListener('click', () => { uid.value = b.dataset.uid; pw.value = PILOT_PASSWORD; $('#si-msg').textContent = ''; $('#si-submit').focus(); });
-    b.addEventListener('dblclick', () => { uid.value = b.dataset.uid; pw.value = PILOT_PASSWORD; trySignin(); });
+    const demoPw = !SERVER.on || (SERVER.health && SERVER.health.demo);
+    b.addEventListener('click', () => { uid.value = b.dataset.uid; if (demoPw) pw.value = PILOT_PASSWORD; $('#si-msg').textContent = ''; (demoPw ? $('#si-submit') : pw).focus(); });
+    b.addEventListener('dblclick', () => { uid.value = b.dataset.uid; if (demoPw) { pw.value = PILOT_PASSWORD; trySignin(); } });
   });
   $('#si-form').addEventListener('submit', e => { e.preventDefault(); trySignin(); });
   updateLock();
@@ -2574,8 +2825,9 @@ function updateLock() {
     signinState.timer = setTimeout(updateLock, 1000);
   } else { btn.disabled = false; btn.textContent = 'Sign in'; }
 }
-function trySignin() {
+async function trySignin() {
   if (Date.now() < signinState.lockUntil) return;
+  if (SERVER.on) return trySigninServer();
   const raw = $('#si-uid').value.trim().toLowerCase();
   const uid = raw.split('@')[0];
   const pw = $('#si-pw').value;
@@ -2608,9 +2860,27 @@ function enterApp(fresh) {
   if (fresh) toast(`Signed in as ${a.name} · ${a.admin ? 'all roles' : ROLES[a.role].name}`, 'user');
 }
 function signOut() {
+  if (SERVER.on) { S.ui.drawer = false; serverSignOut(); return; }
   clearSession(); SESSION = null; closePops();
   S.ui.drawer = false; document.body.classList.remove('has-drawer'); save();
   showSignin('You have signed out.');
+}
+
+async function trySigninServer() {
+  const uid = $('#si-uid').value.trim().toLowerCase().split('@')[0];
+  const pw = $('#si-pw').value; const msg = $('#si-msg'); const btn = $('#si-submit');
+  if (!uid || !pw) { msg.textContent = 'Enter your user ID and password.'; (uid ? $('#si-pw') : $('#si-uid')).focus(); return; }
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  let r;
+  try { r = await serverSignin(uid, pw, $('#si-remember').checked); } catch (e) { r = { ok: false, status: 0, data: { error: 'Can’t reach the Lume engine. Check your connection.' } }; }
+  btn.disabled = false; btn.textContent = 'Sign in';
+  if (!r.ok) {
+    if (r.status === 429) { signinState.lockUntil = Date.now() + (r.data.retryIn || 30) * 1000; updateLock(); return; }
+    msg.textContent = r.status === 401 ? `User ID or password is not right.${r.data.left != null ? ` ${r.data.left} attempt${r.data.left === 1 ? '' : 's'} left before a short pause.` : ''}` : (r.data.error || 'Sign-in failed.');
+    $('#si-pw').select(); return;
+  }
+  try { localStorage.setItem(SESSION_KEY + '-last', uid); } catch (e) { }
+  enterApp(true);
 }
 
 /* ---------- user menu (top bar) ---------- */
@@ -2624,7 +2894,7 @@ ACT['user-menu'] = () => {
   const p = document.createElement('div'); p.className = 'popover'; p.style.width = '300px';
   p.innerHTML = `<div style="padding:14px;display:grid;gap:4px;border-bottom:1px solid var(--line)"><div class="row">${av(a.name, 36, a.admin ? '#1668e3' : '#790007')}<div><b>${esc(a.name)}</b><div class="tiny muted">${esc(a.uid)}</div></div></div>
     <div class="small mt8"><span class="muted">Team</span> ${esc(a.admin ? 'All roles (Whale pilot admin)' : ROLES[a.role].name)}</div>
-    <div class="small"><span class="muted">Signed in</span> ${fmtDT(SESSION.at)}${SESSION.exp ? ' · remembered on this device' : ''}</div></div>
+    <div class="small"><span class="muted">Signed in</span> ${fmtDT(SESSION.at)}${SESSION.exp ? ' · remembered on this device' : ''}</div>${SERVER.on ? '<div class="small"><span class="muted">Workspace</span> shared · Lume engine</div>' : ''}</div>
     ${a.admin ? '<div class="small muted" style="padding:10px 14px;border-bottom:1px solid var(--line)">Admin: use the Role switcher to view each team.</div>' : ''}
     <div class="it" data-act="sign-out">${icon('back', 16)}<b>Sign out</b></div>`;
   $('#topbar').appendChild(p);
@@ -2634,18 +2904,32 @@ ACT['sign-out'] = () => signOut();
 /* ================= App shell ================= */
 const STORE = 'lume-cimb-niaga-v3';
 let saveT;
-function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) { } }, 250); }
+function save() {
+  if (SERVER.on) { if (!SERVER.user) return; try { sessionStorage.setItem('lume-phone', JSON.stringify(S.phone)); sessionStorage.setItem('lume-role', S.role); } catch (e) { } serverQueue(); return; }
+  clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) { } }, 250);
+}
 function load() {
   try { const raw = localStorage.getItem(STORE); if (raw) { const st = JSON.parse(raw); if (st && st.v === 3) return st; } } catch (e) { }
   return null;
 }
 function freshState() { S = seed(); S.inbox.forEach(prepInbox); S.inbox.forEach(m => { if (m.pre != null) { const t = m.at + m.pre * 60000; let text = replyFallback(m); if (m.ai.type === 'Complaint') { const tk = createTicket(m, t); text = text.replace('[dibuat saat dikirim]', tk.id); } m.thread.push({ from: 'brand', at: t, text, by: 'Agus F.' }); m.firstReplyAt = t; m.status = m.ai.type === 'Complaint' ? 'ticketed' : m.ai.type === 'Crisis or viral' ? 'escalated' : 'replied'; delete m.pre; } }); S.phone = phoneInit(); }
-function resetDemo() { try { localStorage.removeItem(STORE); } catch (e) { } freshState(); if (EDITION.signin) applySessionRole(); document.body.classList.toggle('has-drawer', !!S.ui.drawer); save(); location.hash = '#command'; render(); toast('Demo data reset'); }
+async function resetDemo() {
+  if (SERVER.on) {
+    if (!isAdmin()) { toast('Only the pilot admin can reset the shared workspace', 'lock'); return; }
+    const r = await api('POST', '/api/v1/admin/reset');
+    if (!r.ok) { toast(r.data.error || 'Reset failed', 'x'); return; }
+    await serverLoad(); location.hash = '#command'; render(); toast('Demo data reset for everyone'); return;
+  }
+  try { localStorage.removeItem(STORE); } catch (e) { } freshState(); if (EDITION.signin) applySessionRole(); document.body.classList.toggle('has-drawer', !!S.ui.drawer); save(); location.hash = '#command'; render(); toast('Demo data reset'); }
 
 /* ---------- AI (Claude via the page's sample capability; templates as fallback) ---------- */
 const AI = {
   sample: null,
   async init() {
+    if (SERVER.on) {
+      AI.sample = SERVER.health && SERVER.health.ai ? async (prompt) => { const r = await api('POST', '/api/v1/ai/write', { prompt, purpose: 'draft' }); if (!r.ok) throw Object.assign(new Error(r.data.error || 'AI error'), { code: r.status === 429 ? 'rate_limited' : 'error' }); return { text: r.data.text }; } : null;
+      renderTop(); return;
+    }
     for (let i = 0; i < 6 && !(window.claude && window.claude.use); i++) await new Promise(r => setTimeout(r, 500));
     if (!(window.claude && window.claude.use)) return;
     try { const s = await window.claude.use('sample'); if (s) { AI.sample = s; renderTop(); } } catch (e) { }
@@ -2697,7 +2981,7 @@ function navBadges() {
 function renderNav() {
   const cur = parseHash().r; const b = navBadges(); let g = ''; let html = '';
   ROUTES.forEach(r => { if (r.g !== g) { html += `<h6>${r.g}</h6>`; g = r.g; } html += `<a href="#${r.id}" class="${cur === r.id ? 'on' : ''}">${icon(r.ic, 17)}<span>${r.t}</span>${b[r.id] || ''}</a>`; });
-  html += `<div class="foot">Pilot workspace · PT Bank CIMB Niaga Tbk<br>Sample data for the 8-week pilot. <button class="btn sm ghost" style="padding:0;color:var(--primary)" data-act="reset">Reset demo data</button></div>`;
+  html += `<div class="foot">Pilot workspace · PT Bank CIMB Niaga Tbk<br>${SERVER.on ? (SERVER.health && SERVER.health.demo ? `Shared pilot workspace · ${SERVER.health.connectors === 'live' ? 'live accounts' : 'sandbox connectors'}. ${isAdmin() ? '<button class="btn sm ghost" style="padding:0;color:var(--primary)" data-act="reset">Reset demo data</button>' : ''}` : 'Connected to the Lume engine.') : 'Sample data for the 8-week pilot. <button class="btn sm ghost" style="padding:0;color:var(--primary)" data-act="reset">Reset demo data</button>'}</div>`;
   $('#nav').innerHTML = html;
 }
 function renderTop() {
@@ -2708,7 +2992,7 @@ function renderTop() {
     <span class="env">Pilot</span>
     <div class="grow"></div>
     <div class="search" style="position:relative">${icon('search', 14)}<input id="gsearch" placeholder="Search tasks, tickets, assets, people" autocomplete="off" aria-label="Search"></div>
-    <span class="ai-badge ${AI.live ? 'live' : ''}" data-tip="${AI.live ? 'Captions, replies and briefs are written live by Claude, then checked by the compliance rules.' : 'Captions and replies come from the approved template library. Live AI writing switches on when this page is opened on claude.ai and you allow it.'}"><i></i>Alivia AI · ${AI.live ? 'live' : 'templates'}</span>
+    <span class="ai-badge ${AI.live ? 'live' : ''}" data-tip="${AI.live ? 'Captions, replies and briefs are written live by Claude, then checked by the compliance rules.' : SERVER.on ? 'Captions and replies come from the approved template library. Live AI writing switches on when the engine has a Claude API key.' : 'Captions and replies come from the approved template library. Live AI writing switches on when this page is opened on claude.ai and you allow it.'}"><i></i>Alivia AI · ${AI.live ? 'live' : 'templates'}</span>
     <button class="iconbtn" data-act="notifs" aria-label="Notifications">${icon('bell', 18)}${un ? `<span class="dot-count">${un}</span>` : ''}</button>
     <button class="btn ${S.ui.drawer ? 'primary' : ''}" data-act="drawer" aria-label="Advocate app">${icon('phone', 15)}<span class="lbl">Advocate app</span></button>
     ${isAdmin() ? `<label class="row small" style="gap:6px"><span class="muted">Role</span><select class="role-sel" id="rolesel" aria-label="Switch role">${Object.entries(ROLES).map(([k, r]) => `<option value="${k}" ${S.role === k ? 'selected' : ''}>${r.name}</option>`).join('')}</select></label>` : ''}
@@ -2773,11 +3057,11 @@ function bindEvents() {
     if (!e.target.closest('.popover') && !e.target.closest('[data-act="notifs"]') && !e.target.closest('[data-act="user-menu"]') && !e.target.closest('#gsearch')) closePops();
     if (!el) return;
     const a = el.getAttribute('data-act');
-    if (ACT[a]) { e.preventDefault(); ACT[a](el, e); }
+    if (ACT[a]) { e.preventDefault(); if (SERVER.on) { SERVER.lastAct = a; SERVER.lastArgs = { ...el.dataset }; } ACT[a](el, e); if (SERVER.on && SERVER_ACTIONS.has(a)) save(); }
   });
   document.addEventListener('change', e => {
     if (e.target.id === 'rolesel') { if (!isAdmin()) return; S.role = e.target.value; toast(`Now working as ${ROLES[S.role].name} (${ROLES[S.role].user})`, 'user'); render(); return; }
-    const k = e.target.getAttribute('data-change'); if (k && ONCHANGE[k]) ONCHANGE[k](e.target, e);
+    const k = e.target.getAttribute('data-change'); if (k && ONCHANGE[k]) { ONCHANGE[k](e.target, e); if (SERVER.on) save(); }
   });
   document.addEventListener('input', e => {
     if (e.target.id === 'gsearch') { doSearch(e.target.value); return; }
@@ -2790,7 +3074,7 @@ function bindEvents() {
   window.addEventListener('hashchange', () => { closeModal(); render(); });
 }
 ACT['close-modal'] = () => closeModal();
-ACT.reset = () => openModal('Reset demo data?', '<p>This restores the original CIMB Niaga sample data: tasks, tickets, care queue, points and settings. Changes you made in this browser are cleared.</p>', '<button class="btn" data-act="close-modal">Cancel</button><button class="btn danger" data-act="reset-yes">Reset</button>');
+ACT.reset = () => openModal('Reset demo data?', SERVER.on ? '<p>This restores the original CIMB Niaga sample data in the <b>shared</b> pilot workspace: tasks, tickets, care queue, points and settings. Everyone signed in sees the reset.</p>' : '<p>This restores the original CIMB Niaga sample data: tasks, tickets, care queue, points and settings. Changes you made in this browser are cleared.</p>', '<button class="btn" data-act="close-modal">Cancel</button><button class="btn danger" data-act="reset-yes">Reset</button>');
 ACT['reset-yes'] = () => { closeModal(); resetDemo(); };
 ACT.notifs = () => { if ($('.popover')) { closePops(); return; } showNotifs(); };
 ACT['read-all'] = () => { S.notifs.forEach(n => n.unread = false); closePops(); renderTop(); save(); };
@@ -2804,7 +3088,13 @@ ACT.copy = el => copyText(el.dataset.text || ($(el.dataset.from) ? $(el.dataset.
 function lockMsg(what) { toast(`${ROLES[S.role].name} can’t ${what}. Each team publishes only to its own accounts.`, 'lock'); }
 
 /* ---------- init ---------- */
-function init() {
+async function init() {
+  if (await serverDetect()) {
+    initTip(); bindEvents();
+    await serverBoot();
+    setInterval(updateLive, 15000);
+    return;
+  }
   S = load();
   if (!S) freshState();
   S.inbox.forEach(m => { if (!m.ai) prepInbox(m); });

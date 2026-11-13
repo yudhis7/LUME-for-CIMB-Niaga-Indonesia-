@@ -10,7 +10,7 @@ if edition == 'cimb':
 else:
     EDITION, out_name, body_class = {}, 'dist/lume-cimb-niaga.html', ''
 css = (src/'styles.css').read_text()
-js = '\n'.join((src/f).read_text() for f in ['ui.js','data.js','engine.js','views1.js','views2.js','views3.js','views4.js','phone.js','signin.js','app.js'])
+js = '\n'.join((src/f).read_text() for f in ['ui.js','data.js','engine.js','views1.js','views2.js','views3.js','views4.js','phone.js','server.js','signin.js','app.js'])
 html = f'''<!DOCTYPE html>
 <html lang="en">
 <head>

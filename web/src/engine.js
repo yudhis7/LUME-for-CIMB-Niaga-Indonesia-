@@ -135,7 +135,8 @@ function checkCompliance(text, ctx = {}) {
   } else add('facts', true, 'No product tag · nothing to compare');
   // personal & security data
   { const mk = maskPII(t); const hits = [];
-    const ask = [...t.matchAll(/(kirim(?:kan)?|sebutkan|berikan|bagikan|dm(?:kan)?|minta)\s+(?:kode\s+)?(otp|pin|password|nomor kartu|no\.? kartu|cvv|nomor rekening)/gi)].filter(m => !/jangan\s+$/i.test(t.slice(Math.max(0, m.index - 8), m.index)) && !/tidak pernah\s+$/i.test(t.slice(Math.max(0, m.index - 14), m.index)));
+    // "kirim OTP" asks for security data; "tidak pernah meminta OTP" / "jangan berikan PIN" warns against it
+    const ask = [...t.matchAll(/\b(?:me)?(kirim(?:kan)?|sebutkan|berikan|bagikan|dm(?:kan)?|minta)\s+(?:kode\s+)?(otp|pin|password|nomor kartu|no\.? kartu|cvv|nomor rekening)/gi)].filter(m => !/\b(?:jangan|tidak|tak|bukan|never|don'?t)\b(?:\s+\S+){0,2}\s+$/i.test(t.slice(Math.max(0, m.index - 28), m.index)));
     ask.forEach(m => hits.push({ i: m.index, len: m[0].length, w: m[0] }));
     [...t.matchAll(/\b\d(?:[ -]?\d){7,18}\b/g)].filter(m => !isOfficialNum(m[0])).forEach(m => hits.push({ i: m.index, len: m[0].length, w: m[0] }));
     const img = (ctx.imageFlags || []);

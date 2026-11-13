@@ -1,0 +1,46 @@
+name: Engine CI
+on:
+  push:
+    paths: ['server/**', 'web/src/**', 'web/build.py', '.github/workflows/engine-ci.yml']
+  pull_request:
+    paths: ['server/**', 'web/src/**', 'web/build.py']
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: lume, POSTGRES_PASSWORD: lume, POSTGRES_DB: lume }
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U lume" --health-interval 5s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: --health-cmd "redis-cli ping" --health-interval 5s --health-retries 20
+    env:
+      DATABASE_URL: postgres://lume:lume@localhost:5432/lume
+      REDIS_URL: redis://localhost:6379
+      TZ: Asia/Jakarta
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: server/package-lock.json }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Build the console
+        run: cd web && python3 build.py --edition cimb && python3 build.py
+      - name: Install and type-check the engine
+        run: cd server && npm ci && npm run build
+      - name: Start the engine (sandbox connectors)
+        run: cd server && (node dist/index.js all > ../engine.log 2>&1 &) && for i in $(seq 1 30); do curl -sf localhost:8080/api/v1/health && break; sleep 1; done
+      - name: API tests
+        run: cd server && npm test
+      - name: Browser test (two people signed in at once)
+        run: |
+          npm i --no-save playwright@1 && npx playwright install --with-deps chromium
+          node web/test/server-mode.js http://localhost:8080
+      - name: Engine log
+        if: always()
+        run: tail -200 engine.log

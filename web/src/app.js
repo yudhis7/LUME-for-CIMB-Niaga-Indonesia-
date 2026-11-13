@@ -1,18 +1,32 @@
 /* ================= App shell ================= */
 const STORE = 'lume-cimb-niaga-v3';
 let saveT;
-function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) { } }, 250); }
+function save() {
+  if (SERVER.on) { if (!SERVER.user) return; try { sessionStorage.setItem('lume-phone', JSON.stringify(S.phone)); sessionStorage.setItem('lume-role', S.role); } catch (e) { } serverQueue(); return; }
+  clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) { } }, 250);
+}
 function load() {
   try { const raw = localStorage.getItem(STORE); if (raw) { const st = JSON.parse(raw); if (st && st.v === 3) return st; } } catch (e) { }
   return null;
 }
 function freshState() { S = seed(); S.inbox.forEach(prepInbox); S.inbox.forEach(m => { if (m.pre != null) { const t = m.at + m.pre * 60000; let text = replyFallback(m); if (m.ai.type === 'Complaint') { const tk = createTicket(m, t); text = text.replace('[dibuat saat dikirim]', tk.id); } m.thread.push({ from: 'brand', at: t, text, by: 'Agus F.' }); m.firstReplyAt = t; m.status = m.ai.type === 'Complaint' ? 'ticketed' : m.ai.type === 'Crisis or viral' ? 'escalated' : 'replied'; delete m.pre; } }); S.phone = phoneInit(); }
-function resetDemo() { try { localStorage.removeItem(STORE); } catch (e) { } freshState(); if (EDITION.signin) applySessionRole(); document.body.classList.toggle('has-drawer', !!S.ui.drawer); save(); location.hash = '#command'; render(); toast('Demo data reset'); }
+async function resetDemo() {
+  if (SERVER.on) {
+    if (!isAdmin()) { toast('Only the pilot admin can reset the shared workspace', 'lock'); return; }
+    const r = await api('POST', '/api/v1/admin/reset');
+    if (!r.ok) { toast(r.data.error || 'Reset failed', 'x'); return; }
+    await serverLoad(); location.hash = '#command'; render(); toast('Demo data reset for everyone'); return;
+  }
+  try { localStorage.removeItem(STORE); } catch (e) { } freshState(); if (EDITION.signin) applySessionRole(); document.body.classList.toggle('has-drawer', !!S.ui.drawer); save(); location.hash = '#command'; render(); toast('Demo data reset'); }
 
 /* ---------- AI (Claude via the page's sample capability; templates as fallback) ---------- */
 const AI = {
   sample: null,
   async init() {
+    if (SERVER.on) {
+      AI.sample = SERVER.health && SERVER.health.ai ? async (prompt) => { const r = await api('POST', '/api/v1/ai/write', { prompt, purpose: 'draft' }); if (!r.ok) throw Object.assign(new Error(r.data.error || 'AI error'), { code: r.status === 429 ? 'rate_limited' : 'error' }); return { text: r.data.text }; } : null;
+      renderTop(); return;
+    }
     for (let i = 0; i < 6 && !(window.claude && window.claude.use); i++) await new Promise(r => setTimeout(r, 500));
     if (!(window.claude && window.claude.use)) return;
     try { const s = await window.claude.use('sample'); if (s) { AI.sample = s; renderTop(); } } catch (e) { }
@@ -64,7 +78,7 @@ function navBadges() {
 function renderNav() {
   const cur = parseHash().r; const b = navBadges(); let g = ''; let html = '';
   ROUTES.forEach(r => { if (r.g !== g) { html += `<h6>${r.g}</h6>`; g = r.g; } html += `<a href="#${r.id}" class="${cur === r.id ? 'on' : ''}">${icon(r.ic, 17)}<span>${r.t}</span>${b[r.id] || ''}</a>`; });
-  html += `<div class="foot">Pilot workspace · PT Bank CIMB Niaga Tbk<br>Sample data for the 8-week pilot. <button class="btn sm ghost" style="padding:0;color:var(--primary)" data-act="reset">Reset demo data</button></div>`;
+  html += `<div class="foot">Pilot workspace · PT Bank CIMB Niaga Tbk<br>${SERVER.on ? (SERVER.health && SERVER.health.demo ? `Shared pilot workspace · ${SERVER.health.connectors === 'live' ? 'live accounts' : 'sandbox connectors'}. ${isAdmin() ? '<button class="btn sm ghost" style="padding:0;color:var(--primary)" data-act="reset">Reset demo data</button>' : ''}` : 'Connected to the Lume engine.') : 'Sample data for the 8-week pilot. <button class="btn sm ghost" style="padding:0;color:var(--primary)" data-act="reset">Reset demo data</button>'}</div>`;
   $('#nav').innerHTML = html;
 }
 function renderTop() {
@@ -75,7 +89,7 @@ function renderTop() {
     <span class="env">Pilot</span>
     <div class="grow"></div>
     <div class="search" style="position:relative">${icon('search', 14)}<input id="gsearch" placeholder="Search tasks, tickets, assets, people" autocomplete="off" aria-label="Search"></div>
-    <span class="ai-badge ${AI.live ? 'live' : ''}" data-tip="${AI.live ? 'Captions, replies and briefs are written live by Claude, then checked by the compliance rules.' : 'Captions and replies come from the approved template library. Live AI writing switches on when this page is opened on claude.ai and you allow it.'}"><i></i>Alivia AI · ${AI.live ? 'live' : 'templates'}</span>
+    <span class="ai-badge ${AI.live ? 'live' : ''}" data-tip="${AI.live ? 'Captions, replies and briefs are written live by Claude, then checked by the compliance rules.' : SERVER.on ? 'Captions and replies come from the approved template library. Live AI writing switches on when the engine has a Claude API key.' : 'Captions and replies come from the approved template library. Live AI writing switches on when this page is opened on claude.ai and you allow it.'}"><i></i>Alivia AI · ${AI.live ? 'live' : 'templates'}</span>
     <button class="iconbtn" data-act="notifs" aria-label="Notifications">${icon('bell', 18)}${un ? `<span class="dot-count">${un}</span>` : ''}</button>
     <button class="btn ${S.ui.drawer ? 'primary' : ''}" data-act="drawer" aria-label="Advocate app">${icon('phone', 15)}<span class="lbl">Advocate app</span></button>
     ${isAdmin() ? `<label class="row small" style="gap:6px"><span class="muted">Role</span><select class="role-sel" id="rolesel" aria-label="Switch role">${Object.entries(ROLES).map(([k, r]) => `<option value="${k}" ${S.role === k ? 'selected' : ''}>${r.name}</option>`).join('')}</select></label>` : ''}
@@ -140,11 +154,11 @@ function bindEvents() {
     if (!e.target.closest('.popover') && !e.target.closest('[data-act="notifs"]') && !e.target.closest('[data-act="user-menu"]') && !e.target.closest('#gsearch')) closePops();
     if (!el) return;
     const a = el.getAttribute('data-act');
-    if (ACT[a]) { e.preventDefault(); ACT[a](el, e); }
+    if (ACT[a]) { e.preventDefault(); if (SERVER.on) { SERVER.lastAct = a; SERVER.lastArgs = { ...el.dataset }; } ACT[a](el, e); if (SERVER.on && SERVER_ACTIONS.has(a)) save(); }
   });
   document.addEventListener('change', e => {
     if (e.target.id === 'rolesel') { if (!isAdmin()) return; S.role = e.target.value; toast(`Now working as ${ROLES[S.role].name} (${ROLES[S.role].user})`, 'user'); render(); return; }
-    const k = e.target.getAttribute('data-change'); if (k && ONCHANGE[k]) ONCHANGE[k](e.target, e);
+    const k = e.target.getAttribute('data-change'); if (k && ONCHANGE[k]) { ONCHANGE[k](e.target, e); if (SERVER.on) save(); }
   });
   document.addEventListener('input', e => {
     if (e.target.id === 'gsearch') { doSearch(e.target.value); return; }
@@ -157,7 +171,7 @@ function bindEvents() {
   window.addEventListener('hashchange', () => { closeModal(); render(); });
 }
 ACT['close-modal'] = () => closeModal();
-ACT.reset = () => openModal('Reset demo data?', '<p>This restores the original CIMB Niaga sample data: tasks, tickets, care queue, points and settings. Changes you made in this browser are cleared.</p>', '<button class="btn" data-act="close-modal">Cancel</button><button class="btn danger" data-act="reset-yes">Reset</button>');
+ACT.reset = () => openModal('Reset demo data?', SERVER.on ? '<p>This restores the original CIMB Niaga sample data in the <b>shared</b> pilot workspace: tasks, tickets, care queue, points and settings. Everyone signed in sees the reset.</p>' : '<p>This restores the original CIMB Niaga sample data: tasks, tickets, care queue, points and settings. Changes you made in this browser are cleared.</p>', '<button class="btn" data-act="close-modal">Cancel</button><button class="btn danger" data-act="reset-yes">Reset</button>');
 ACT['reset-yes'] = () => { closeModal(); resetDemo(); };
 ACT.notifs = () => { if ($('.popover')) { closePops(); return; } showNotifs(); };
 ACT['read-all'] = () => { S.notifs.forEach(n => n.unread = false); closePops(); renderTop(); save(); };
@@ -171,7 +185,13 @@ ACT.copy = el => copyText(el.dataset.text || ($(el.dataset.from) ? $(el.dataset.
 function lockMsg(what) { toast(`${ROLES[S.role].name} can’t ${what}. Each team publishes only to its own accounts.`, 'lock'); }
 
 /* ---------- init ---------- */
-function init() {
+async function init() {
+  if (await serverDetect()) {
+    initTip(); bindEvents();
+    await serverBoot();
+    setInterval(updateLive, 15000);
+    return;
+  }
   S = load();
   if (!S) freshState();
   S.inbox.forEach(m => { if (!m.ai) prepInbox(m); });

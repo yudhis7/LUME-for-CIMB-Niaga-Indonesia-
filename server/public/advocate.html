@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tugas Advokat · CIMB Niaga</title>
+<style>
+  :root { --red:#c8102e; --ink:#1d2433; --muted:#667085; --line:#e4e7ec; --good:#12805c; --crit:#c0262d; --bg:#f6f7f9; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; color:var(--ink); background:var(--bg); }
+  header { background:var(--red); color:#fff; padding:16px 18px; }
+  header b { font-size:17px; } header small { display:block; opacity:.85; }
+  main { max-width:560px; margin:0 auto; padding:14px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:12px; }
+  h2 { font-size:16px; margin:0 0 4px; } .muted { color:var(--muted); font-size:13px; }
+  .pill { display:inline-block; font-size:12px; padding:2px 8px; border-radius:99px; background:#eef2f6; margin-right:4px; }
+  .pill.good { background:#e3f4ec; color:var(--good); }
+  textarea, input[type=url] { width:100%; border:1px solid var(--line); border-radius:8px; padding:9px; font:inherit; }
+  textarea { min-height:110px; }
+  label { display:block; margin-top:10px; font-size:13px; font-weight:600; }
+  .plats label { display:inline-flex; gap:6px; align-items:center; font-weight:500; margin-right:12px; }
+  button { font:inherit; border:0; border-radius:8px; padding:10px 14px; cursor:pointer; }
+  .primary { background:var(--red); color:#fff; width:100%; margin-top:12px; font-weight:600; }
+  .ghost { background:#eef2f6; }
+  .msg { font-size:13px; margin-top:8px; } .msg.err { color:var(--crit); } .msg.ok { color:var(--good); }
+  .empty { text-align:center; color:var(--muted); padding:30px 10px; }
+</style>
+</head>
+<body>
+<header><b>Tugas Advokat CIMB Niaga</b><small id="who">Memuat…</small></header>
+<main id="app"><div class="empty">Memuat tugas kamu…</div></main>
+<script>
+"use strict";
+const token = new URLSearchParams(location.hash.slice(1)).get('t') || sessionStorage.getItem('adv-token') || '';
+if (token) { sessionStorage.setItem('adv-token', token); history.replaceState(null, '', location.pathname); }
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const NAMES = { instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook', x: 'X', threads: 'Threads', youtube: 'YouTube' };
+async function call(method, path, body) {
+  const r = await fetch(path, { method, headers: { authorization: 'Bearer ' + token, 'x-lume-csrf': '1', ...(body ? { 'content-type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined });
+  let d = {}; try { d = await r.json(); } catch (e) { }
+  return { ok: r.ok, status: r.status, data: d };
+}
+function caption(t) { return t.template.replace('{cerita}', '').replace('{link}', t.link).replace('{topik}', (t.topics || []).join(' ')).replace('{kota}', '').replace('{cabang}', '').replace(/\s{2,}/g, ' ').trim() + (t.disclosure && !/#iklan/i.test(t.template) ? ' #iklan' : ''); }
+async function load() {
+  const app = document.getElementById('app');
+  if (!token) { app.innerHTML = '<div class="empty">Buka tautan yang dikirim koordinator kamu lewat WhatsApp.</div>'; document.getElementById('who').textContent = ''; return; }
+  const r = await call('GET', '/api/v1/advocate/me');
+  if (!r.ok) { app.innerHTML = `<div class="empty">${esc(r.data.error || 'Tautan tidak berlaku.')}</div>`; document.getElementById('who').textContent = ''; return; }
+  const { advocate: a, tasks } = r.data;
+  document.getElementById('who').textContent = `${a.name} · ${a.circle} · ${a.points} poin`;
+  if (!a.optIn) { app.innerHTML = '<div class="empty">Kamu sedang tidak ikut program advokat.</div>'; return; }
+  if (!tasks.length) { app.innerHTML = '<div class="empty">Belum ada tugas baru. Terima kasih sudah ikut!</div>'; return; }
+  app.innerHTML = tasks.map(t => `<div class="card" data-id="${esc(t.id)}">
+    <h2>${esc(t.name)}</h2>
+    <div class="muted">${esc(t.goal)}</div>
+    <div style="margin:8px 0">${t.status === 'done' ? '<span class="pill good">Sudah dibagikan</span>' : `<span class="pill">Batas ${new Date(t.deadline).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}</span>`}${t.points ? `<span class="pill">+${t.points} poin</span>` : ''}${t.paid || t.disclosure ? '<span class="pill">wajib #iklan</span>' : ''}</div>
+    ${t.status === 'done' ? '' : `
+    <label>Caption (tambahkan cerita kamu sendiri)</label>
+    <textarea class="cap">${esc(caption(t))}</textarea>
+    <button class="ghost copy" type="button">Salin caption</button>
+    <label>Dibagikan di</label>
+    <div class="plats">${t.channels.map(c => `<label><input type="checkbox" value="${esc(c)}" ${t.channels.length === 1 ? 'checked' : ''}> ${NAMES[c] || esc(c)}</label>`).join('')}</div>
+    <label>Tautan postingan kamu</label>
+    <input type="url" class="url" placeholder="https://www.instagram.com/p/…">
+    <button class="primary send" type="button">Kirim tautan</button>
+    <div class="msg"></div>`}
+  </div>`).join('') + '<p class="muted" style="text-align:center">Jangan pernah membagikan data nasabah, OTP, PIN atau nomor kartu. CIMB Niaga tidak pernah memintanya.</p>';
+  app.querySelectorAll('.card').forEach(card => {
+    const id = card.dataset.id; const msg = card.querySelector('.msg');
+    const copy = card.querySelector('.copy'); if (copy) copy.onclick = async () => { try { await navigator.clipboard.writeText(card.querySelector('.cap').value); copy.textContent = 'Tersalin ✓'; } catch (e) { card.querySelector('.cap').select(); } };
+    const send = card.querySelector('.send'); if (!send) return;
+    send.onclick = async () => {
+      const platforms = [...card.querySelectorAll('.plats input:checked')].map(i => i.value);
+      const url = card.querySelector('.url').value.trim();
+      if (!platforms.length) { msg.className = 'msg err'; msg.textContent = 'Pilih minimal satu platform.'; return; }
+      if (!/^https?:\/\//.test(url)) { msg.className = 'msg err'; msg.textContent = 'Tempel tautan postingan kamu (diawali https://).'; return; }
+      send.disabled = true; send.textContent = 'Mengirim…';
+      const r = await call('POST', `/api/v1/advocate/tasks/${encodeURIComponent(id)}/submit`, { platforms, urls: [url], caption: card.querySelector('.cap').value });
+      send.disabled = false; send.textContent = 'Kirim tautan';
+      if (!r.ok) { msg.className = 'msg err'; msg.textContent = r.data.issues ? 'Caption perlu diperbaiki: ' + r.data.issues.join(', ') : (r.data.error || 'Gagal mengirim.'); return; }
+      msg.className = 'msg ok'; msg.textContent = `Terima kasih! Tautan diterima${r.data.points ? ` · +${r.data.points} poin` : ''}.`;
+      setTimeout(load, 1500);
+    };
+  });
+}
+load();
+</script>
+</body>
+</html>

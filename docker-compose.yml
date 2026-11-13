@@ -1,0 +1,46 @@
+# Run the whole Lume engine on one machine (pilot / UAT):
+#   cp server/.env.example .env   # then edit
+#   docker compose up -d --build
+# Open http://localhost:8080 and sign in with a pilot account.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: lume
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lume}
+      POSTGRES_DB: lume
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U lume"], interval: 5s, retries: 20 }
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: [redisdata:/data]
+    healthcheck: { test: ["CMD", "redis-cli", "ping"], interval: 5s, retries: 20 }
+    restart: unless-stopped
+
+  api:
+    build: { context: ., dockerfile: server/Dockerfile }
+    command: ["api"]
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgres://lume:${POSTGRES_PASSWORD:-lume}@postgres:5432/lume
+      REDIS_URL: redis://redis:6379
+    ports: ["8080:8080"]
+    depends_on: { postgres: { condition: service_healthy }, redis: { condition: service_healthy } }
+    restart: unless-stopped
+
+  worker:
+    build: { context: ., dockerfile: server/Dockerfile }
+    command: ["worker"]
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgres://lume:${POSTGRES_PASSWORD:-lume}@postgres:5432/lume
+      REDIS_URL: redis://redis:6379
+    depends_on: { api: { condition: service_started } }
+    restart: unless-stopped
+
+volumes:
+  pgdata: {}
+  redisdata: {}

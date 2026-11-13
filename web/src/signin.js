@@ -33,8 +33,8 @@ function clearSession() {
   try { sessionStorage.removeItem(SESSION_KEY); } catch (e) { }
   try { localStorage.removeItem(SESSION_KEY); } catch (e) { }
 }
-const sessionAccount = () => SESSION ? PILOT_ACCOUNTS.find(a => a.uid === SESSION.uid) : null;
-const isAdmin = () => !EDITION.signin || !!(sessionAccount() || {}).admin;
+const sessionAccount = () => SERVER.on ? SERVER.user : SESSION ? PILOT_ACCOUNTS.find(a => a.uid === SESSION.uid) : null;
+const isAdmin = () => (!EDITION.signin && !SERVER.on) || !!(sessionAccount() || {}).admin;
 function applySessionRole() {
   const a = sessionAccount();
   if (a && !a.admin) S.role = a.role;
@@ -90,10 +90,10 @@ function showSignin(message) {
         <div class="si-sso small muted">${icon('lock', 13)}In production, Lume uses CIMB Niaga single sign-on, set up with IT &amp; InfoSec.</div>
       </form>
       <div class="si-pilot">
-        <div class="row between"><b class="small">Pilot accounts</b><span class="tiny muted">password <code>${PILOT_PASSWORD}</code></span></div>
+        <div class="row between"><b class="small">Pilot accounts</b>${!SERVER.on || (SERVER.health && SERVER.health.demo) ? `<span class="tiny muted">password <code>${PILOT_PASSWORD}</code></span>` : ''}</div>
         <div class="si-accts">${PILOT_ACCOUNTS.map(a => `<button type="button" class="si-acct" data-uid="${a.uid}">${av(a.name, 26, a.admin ? '#1668e3' : '#790007')}<span><b>${esc(a.name)}</b><small>${esc(a.title)}</small></span></button>`).join('')}</div>
       </div>
-      <p class="si-warn tiny">${icon('shield', 12)}Sign-in is checked on this device only. Never enter your OCTO, internet banking or email password here.</p>
+      <p class="si-warn tiny">${icon('shield', 12)}${SERVER.on ? 'Sign-in is checked by the Lume engine for this workspace.' : 'Sign-in is checked on this device only.'} Never enter your OCTO, internet banking or email password here.</p>
     </section>
   </div>`;
   document.body.appendChild(root);
@@ -104,8 +104,9 @@ function showSignin(message) {
   const caps = e => { if (e.getModifierState) $('#si-caps').hidden = !e.getModifierState('CapsLock'); };
   pw.addEventListener('keydown', caps); pw.addEventListener('keyup', caps);
   root.querySelectorAll('.si-acct').forEach(b => {
-    b.addEventListener('click', () => { uid.value = b.dataset.uid; pw.value = PILOT_PASSWORD; $('#si-msg').textContent = ''; $('#si-submit').focus(); });
-    b.addEventListener('dblclick', () => { uid.value = b.dataset.uid; pw.value = PILOT_PASSWORD; trySignin(); });
+    const demoPw = !SERVER.on || (SERVER.health && SERVER.health.demo);
+    b.addEventListener('click', () => { uid.value = b.dataset.uid; if (demoPw) pw.value = PILOT_PASSWORD; $('#si-msg').textContent = ''; (demoPw ? $('#si-submit') : pw).focus(); });
+    b.addEventListener('dblclick', () => { uid.value = b.dataset.uid; if (demoPw) { pw.value = PILOT_PASSWORD; trySignin(); } });
   });
   $('#si-form').addEventListener('submit', e => { e.preventDefault(); trySignin(); });
   updateLock();
@@ -120,8 +121,9 @@ function updateLock() {
     signinState.timer = setTimeout(updateLock, 1000);
   } else { btn.disabled = false; btn.textContent = 'Sign in'; }
 }
-function trySignin() {
+async function trySignin() {
   if (Date.now() < signinState.lockUntil) return;
+  if (SERVER.on) return trySigninServer();
   const raw = $('#si-uid').value.trim().toLowerCase();
   const uid = raw.split('@')[0];
   const pw = $('#si-pw').value;
@@ -154,9 +156,27 @@ function enterApp(fresh) {
   if (fresh) toast(`Signed in as ${a.name} · ${a.admin ? 'all roles' : ROLES[a.role].name}`, 'user');
 }
 function signOut() {
+  if (SERVER.on) { S.ui.drawer = false; serverSignOut(); return; }
   clearSession(); SESSION = null; closePops();
   S.ui.drawer = false; document.body.classList.remove('has-drawer'); save();
   showSignin('You have signed out.');
+}
+
+async function trySigninServer() {
+  const uid = $('#si-uid').value.trim().toLowerCase().split('@')[0];
+  const pw = $('#si-pw').value; const msg = $('#si-msg'); const btn = $('#si-submit');
+  if (!uid || !pw) { msg.textContent = 'Enter your user ID and password.'; (uid ? $('#si-pw') : $('#si-uid')).focus(); return; }
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  let r;
+  try { r = await serverSignin(uid, pw, $('#si-remember').checked); } catch (e) { r = { ok: false, status: 0, data: { error: 'Can’t reach the Lume engine. Check your connection.' } }; }
+  btn.disabled = false; btn.textContent = 'Sign in';
+  if (!r.ok) {
+    if (r.status === 429) { signinState.lockUntil = Date.now() + (r.data.retryIn || 30) * 1000; updateLock(); return; }
+    msg.textContent = r.status === 401 ? `User ID or password is not right.${r.data.left != null ? ` ${r.data.left} attempt${r.data.left === 1 ? '' : 's'} left before a short pause.` : ''}` : (r.data.error || 'Sign-in failed.');
+    $('#si-pw').select(); return;
+  }
+  try { localStorage.setItem(SESSION_KEY + '-last', uid); } catch (e) { }
+  enterApp(true);
 }
 
 /* ---------- user menu (top bar) ---------- */
@@ -170,7 +190,7 @@ ACT['user-menu'] = () => {
   const p = document.createElement('div'); p.className = 'popover'; p.style.width = '300px';
   p.innerHTML = `<div style="padding:14px;display:grid;gap:4px;border-bottom:1px solid var(--line)"><div class="row">${av(a.name, 36, a.admin ? '#1668e3' : '#790007')}<div><b>${esc(a.name)}</b><div class="tiny muted">${esc(a.uid)}</div></div></div>
     <div class="small mt8"><span class="muted">Team</span> ${esc(a.admin ? 'All roles (Whale pilot admin)' : ROLES[a.role].name)}</div>
-    <div class="small"><span class="muted">Signed in</span> ${fmtDT(SESSION.at)}${SESSION.exp ? ' · remembered on this device' : ''}</div></div>
+    <div class="small"><span class="muted">Signed in</span> ${fmtDT(SESSION.at)}${SESSION.exp ? ' · remembered on this device' : ''}</div>${SERVER.on ? '<div class="small"><span class="muted">Workspace</span> shared · Lume engine</div>' : ''}</div>
     ${a.admin ? '<div class="small muted" style="padding:10px 14px;border-bottom:1px solid var(--line)">Admin: use the Role switcher to view each team.</div>' : ''}
     <div class="it" data-act="sign-out">${icon('back', 16)}<b>Sign out</b></div>`;
   $('#topbar').appendChild(p);
